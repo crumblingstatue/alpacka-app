@@ -70,12 +70,19 @@ pub fn ui(
             let list = &pac.alpacka_filt_remote_pkg_list;
             body.rows(22.0, list.len(), |mut row| {
                 let (db_name, idx) = &list[row.index()];
-                let pkg = &pac
+                let Some(pkg) = &pac
                     .alpacka_syncdbs
                     .iter()
                     .find(|db| &db.name == db_name)
                     .unwrap()
-                    .pkgs[*idx];
+                    .pkgs
+                    .get(*idx)
+                else {
+                    row.col(|ui| {
+                        ui.label(format!("<Error: invalid index: {idx}>"));
+                    });
+                    return;
+                };
                 row.col(|ui| {
                     ui.horizontal(|ui| {
                         if ui.link(format!("{db_name}/{}", pkg.desc.name)).clicked() {

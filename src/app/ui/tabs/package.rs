@@ -70,6 +70,19 @@ pub fn ui(ui: &mut egui::Ui, pac: &PacState, ui_state: &mut SharedUiState, pkg_t
     }
 }
 
+fn db_name_is_arch(name: &str) -> bool {
+    [
+        "core",
+        "extra",
+        "core-testing",
+        "extra-testing",
+        "multilib",
+        "multilib-testing",
+    ]
+    .into_iter()
+    .any(|repo| name == repo)
+}
+
 fn pkg_ui<'a, I>(
     ui: &mut egui::Ui,
     ui_state: &mut SharedUiState,
@@ -105,8 +118,24 @@ fn pkg_ui<'a, I>(
                     ui.label(pkg.desc.desc.as_deref().unwrap_or("<no description>"));
                     if let Some(url) = pkg.desc.url.as_deref() {
                         ui.horizontal(|ui| {
-                            ui.label("URL");
+                            ui.label("Upstream URL");
                             ui.hyperlink(url);
+                        });
+                    }
+                    if db_name_is_arch(db_name) {
+                        ui.horizontal(|ui| {
+                            ui.label("Arch package URL");
+                            ui.hyperlink(format!(
+                                "https://archlinux.org/packages/{db_name}/{}/{}",
+                                pkg.desc.arch, pkg.desc.name
+                            ));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Package Source URL");
+                            ui.hyperlink(format!(
+                                "https://gitlab.archlinux.org/archlinux/packaging/packages/{}",
+                                pkg.desc.name
+                            ));
                         });
                     }
                     ui.label(format!(

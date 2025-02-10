@@ -58,11 +58,9 @@ impl PacState {
             alpaca_local_pkg_list: local_db,
             alpacka_filt_remote_pkg_list: {
                 let mut vec = Vec::new();
-                let mut i = 0;
                 for db in &syncdbs {
-                    for _ in 0..db.pkgs.len() {
+                    for i in 0..db.pkgs.len() {
                         vec.push((db.name.clone(), i));
-                        i += 1;
                     }
                 }
                 vec

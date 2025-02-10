@@ -83,8 +83,10 @@ impl AlpackaApp {
     }
     pub fn sync_from_config(&mut self, egui_ctx: &eframe::egui::Context) {
         if let Some(color_theme) = &self.cfg.color_theme {
-            self.ui.shared.colorix =
-                Some(Colorix::init(egui_ctx, color_theme.map(ThemeColor::Custom)))
+            self.ui.shared.colorix = Some(Colorix::global(
+                egui_ctx,
+                color_theme.map(ThemeColor::Custom),
+            ))
         }
     }
     fn sync_to_config(&mut self) {

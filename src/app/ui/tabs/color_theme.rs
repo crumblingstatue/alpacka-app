@@ -16,7 +16,7 @@ pub fn ui(ui: &mut egui::Ui, opt_colorix: &mut Option<Colorix>) {
             ui.horizontal(|ui| {
                 ui.group(|ui| {
                     ui.label("Light/dark");
-                    colorix.light_dark_toggle_button(ui);
+                    colorix.light_dark_toggle_button(ui, 30.0);
                 });
                 ui.group(|ui| {
                     ui.label("Preset");
@@ -32,7 +32,7 @@ pub fn ui(ui: &mut egui::Ui, opt_colorix: &mut Option<Colorix>) {
         }
         None => {
             if ui.button("Activate custom colors").clicked() {
-                *opt_colorix = Some(Colorix::init(ui.ctx(), THEME_PACARCH));
+                *opt_colorix = Some(Colorix::global(ui.ctx(), THEME_PACARCH));
             }
         }
     }

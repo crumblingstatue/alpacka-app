@@ -96,6 +96,10 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                             }
                         });
                     }
+                    if ui.button("⟳ Refresh package list").clicked() {
+                        ui.close_menu();
+                        app.pac_recv = PacState::new_spawned();
+                    }
                 });
                 ui.menu_button("☰ Preferences", |ui| {
                     if ui.button("🎨 Color theme").clicked() {

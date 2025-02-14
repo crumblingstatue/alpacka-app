@@ -6,6 +6,7 @@ use {app::AlpackaApp, eframe::NativeOptions};
 mod alpm_util;
 mod app;
 mod config;
+mod query_syntax;
 
 fn main() -> anyhow::Result<()> {
     let mut app = AlpackaApp::new()?;

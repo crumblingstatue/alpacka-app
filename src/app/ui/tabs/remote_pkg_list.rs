@@ -1,5 +1,5 @@
 use {
-    super::{PkgListState, local_pkg_list::pkg_list_table_builder},
+    super::{PkgListQuery, PkgListState, local_pkg_list::pkg_list_table_builder},
     crate::{
         alpm_util::PkgId,
         app::{
@@ -19,12 +19,13 @@ pub fn ui(
 ) {
     egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
         ui.horizontal(|ui| {
-            if ui
-                .add(
-                    egui::TextEdit::singleline(&mut tab_state.filter_string).hint_text("🔍 Filter"),
-                )
-                .changed()
-            {
+            let re =
+                ui.add(egui::TextEdit::singleline(&mut tab_state.query_src).hint_text("🔍 Query"));
+            if ui.input(|inp| inp.key_pressed(egui::Key::Num2) && inp.modifiers.shift) {
+                re.request_focus();
+            }
+            if re.changed() {
+                tab_state.query = PkgListQuery::compile(&tab_state.query_src);
                 pac.alpacka_filt_remote_pkg_list =
                     pac.alpacka_syncdbs
                         .iter()
@@ -36,7 +37,23 @@ pub fn ui(
                                 .map(|(idx, pkg)| (syncdb.name.clone(), idx, pkg))
                         })
                         .filter_map(|(db, idx, pkg)| {
-                            let filt_lo = tab_state.filter_string.to_ascii_lowercase();
+                            let filt_lo = tab_state.query.string.to_ascii_lowercase();
+                            let mut flags = tab_state.query.flags;
+                            if flags.installed || flags.newer || flags.older {
+                                if let Some((_, cmp)) =
+                                    remote_local_cmp(&pkg.desc, &pac.alpaca_local_pkg_list)
+                                {
+                                    flags.installed = false;
+                                    match cmp {
+                                        RemoteLocalCmp::Newer => flags.newer = false,
+                                        RemoteLocalCmp::Same => {}
+                                        RemoteLocalCmp::Older => flags.older = false,
+                                    }
+                                }
+                            }
+                            if flags.any() {
+                                return None;
+                            }
                             (pkg.desc.name.contains(&filt_lo)
                                 || pkg.desc.desc.as_ref().is_some_and(|desc| {
                                     desc.to_ascii_lowercase().contains(&filt_lo)
@@ -109,18 +126,38 @@ pub fn ui(
         });
 }
 
+pub fn remote_local_cmp<'p>(
+    remote: &PkgDesc,
+    local_pkg_list: &'p [Pkg],
+) -> Option<(&'p Pkg, RemoteLocalCmp)> {
+    local_pkg_list
+        .iter()
+        .find(|pkg2| pkg2.desc.name == remote.name)
+        .map(|local_pkg| {
+            let cmp = match remote.version.cmp(&local_pkg.desc.version) {
+                std::cmp::Ordering::Less => RemoteLocalCmp::Older,
+                std::cmp::Ordering::Equal => RemoteLocalCmp::Same,
+                std::cmp::Ordering::Greater => RemoteLocalCmp::Newer,
+            };
+            (local_pkg, cmp)
+        })
+}
+
+pub enum RemoteLocalCmp {
+    Newer,
+    Same,
+    Older,
+}
+
 pub fn installed_label_for_remote_pkg(
     ui: &mut egui::Ui,
     ui_state: &mut SharedUiState,
     remote: &PkgDesc,
     local_pkg_list: &[Pkg],
 ) {
-    if let Some(local_pkg) = local_pkg_list
-        .iter()
-        .find(|pkg2| pkg2.desc.name == remote.name)
-    {
-        let re = match remote.version.cmp(&local_pkg.desc.version) {
-            std::cmp::Ordering::Less => ui
+    if let Some((local_pkg, cmp)) = remote_local_cmp(remote, local_pkg_list) {
+        let re = match cmp {
+            RemoteLocalCmp::Older => ui
                 .add(
                     egui::Label::new({
                         egui::RichText::new("[older]").color(egui::Color32::ORANGE)
@@ -140,10 +177,10 @@ pub fn installed_label_for_remote_pkg(
                         );
                     });
                 }),
-            std::cmp::Ordering::Equal => {
+            RemoteLocalCmp::Same => {
                 ui.add(egui::Label::new("[installed]").sense(egui::Sense::click()))
             }
-            std::cmp::Ordering::Greater => ui
+            RemoteLocalCmp::Newer => ui
                 .add(
                     egui::Label::new(egui::RichText::new("[newer]").color(egui::Color32::YELLOW))
                         .sense(egui::Sense::click()),

@@ -1,5 +1,5 @@
 use {
-    super::PkgListState,
+    super::{PkgListQuery, PkgListState},
     crate::{
         alpm_util::PkgId,
         app::{
@@ -19,18 +19,19 @@ pub fn ui(
 ) {
     egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
         ui.horizontal(|ui| {
-            if ui
-                .add(
-                    egui::TextEdit::singleline(&mut tab_state.filter_string).hint_text("🔍 Filter"),
-                )
-                .changed()
-            {
+            let re =
+                ui.add(egui::TextEdit::singleline(&mut tab_state.query_src).hint_text("🔍 Query"));
+            if ui.input(|inp| inp.key_pressed(egui::Key::Num2) && inp.modifiers.shift) {
+                re.request_focus();
+            }
+            if re.changed() {
+                tab_state.query = PkgListQuery::compile(&tab_state.query_src);
                 pac.alpacka_filt_pkg_list =
                     pac.alpaca_local_pkg_list
                         .iter()
                         .enumerate()
                         .filter_map(|(i, pkg)| {
-                            let filt_lo = tab_state.filter_string.to_ascii_lowercase();
+                            let filt_lo = tab_state.query.string.to_ascii_lowercase();
                             (pkg.desc.name.contains(&filt_lo)
                                 || pkg.desc.desc.as_ref().is_some_and(|desc| {
                                     desc.to_ascii_lowercase().contains(&filt_lo)

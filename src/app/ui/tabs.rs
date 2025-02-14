@@ -1,5 +1,9 @@
 use {
-    super::SharedUiState, crate::app::PacState, eframe::egui, egui_dock::TabViewer, package::PkgTab,
+    super::SharedUiState,
+    crate::{app::PacState, query_syntax::PkgListQuery},
+    eframe::egui,
+    egui_dock::TabViewer,
+    package::PkgTab,
 };
 
 mod color_theme;
@@ -78,5 +82,6 @@ impl Tab {
 
 #[derive(Default)]
 pub struct PkgListState {
-    filter_string: String,
+    query_src: String,
+    query: PkgListQuery,
 }

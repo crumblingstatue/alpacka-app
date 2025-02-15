@@ -5,7 +5,7 @@ use {
             Packages,
             ui::{SharedUiState, cmd::Cmd},
         },
-        packages::{PkgIdx, SyncDbIdx},
+        packages::{PkgIdx, PkgRef, SyncDbIdx},
         util::PkgId,
     },
     alpacka::{Pkg, PkgDesc},
@@ -37,7 +37,7 @@ pub fn ui(
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
             let list = &pac.filt_remote_pkgs;
             body.rows(22.0, list.len(), |mut row| {
-                let (db_idx, idx) = &list[row.index()];
+                let (db_idx, idx) = list[row.index()].into_components();
                 let Some(db) = pac.syncdbs.get(db_idx.to_usize()) else {
                     row.col(|ui| {
                         ui.label(format!("<Error: can't find db {db_idx:?}>"));
@@ -118,7 +118,7 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
                             .desc
                             .as_ref()
                             .is_some_and(|desc| desc.to_ascii_lowercase().contains(&filt_lo)))
-                    .then_some((db, PkgIdx::from_usize(idx)))
+                    .then_some(PkgRef::from_components(db, PkgIdx::from_usize(idx)))
                 })
                 .collect();
         }

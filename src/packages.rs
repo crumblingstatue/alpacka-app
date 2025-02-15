@@ -1,7 +1,7 @@
 use {alpacka::Pkg, smol_str::SmolStr};
 
 /// Used to index into a package list in order to refer to a package efficiently
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PkgIdx(u32);
 
 impl PkgIdx {
@@ -18,7 +18,7 @@ impl PkgIdx {
 }
 
 /// Used to index into a sync db list
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SyncDbIdx(u8);
 
 impl SyncDbIdx {
@@ -34,6 +34,28 @@ impl SyncDbIdx {
     }
 }
 
+/// Refers to a package that's either in a local or a remote database
+///
+/// Internally, it uses 8 bits for the db index, and 24 bits for the package index
+#[derive(Clone, Copy)]
+pub struct PkgRef(u32);
+
+impl PkgRef {
+    pub fn from_components(db: SyncDbIdx, pkg: PkgIdx) -> Self {
+        let merged = u32::from(db.0) << 24 | pkg.0;
+        Self(merged)
+    }
+    pub fn into_components(self) -> (SyncDbIdx, PkgIdx) {
+        (SyncDbIdx((self.0 >> 24) as u8), PkgIdx(self.0 & 0xFF_FFFF))
+    }
+}
+
+#[test]
+fn test_pkg_ref_cons() {
+    let pkg_ref = PkgRef::from_components(SyncDbIdx(42), PkgIdx(617));
+    assert_eq!(pkg_ref.into_components(), (SyncDbIdx(42), PkgIdx(617)));
+}
+
 pub struct SyncDb {
     pub name: SmolStr,
     pub pkgs: Vec<Pkg>,
@@ -43,7 +65,7 @@ pub struct SyncDb {
 pub struct Packages {
     pub local_pkg_list: Vec<Pkg>,
     pub filt_local_pkgs: Vec<PkgIdx>,
-    pub filt_remote_pkgs: Vec<(SyncDbIdx, PkgIdx)>,
+    pub filt_remote_pkgs: Vec<PkgRef>,
     pub syncdbs: Vec<SyncDb>,
 }
 
@@ -79,7 +101,10 @@ impl Packages {
                 let mut vec = Vec::new();
                 for (db_idx, db) in syncdbs.iter().enumerate() {
                     for i in 0..db.pkgs.len() {
-                        vec.push((SyncDbIdx::from_usize(db_idx), PkgIdx::from_usize(i)));
+                        vec.push(PkgRef::from_components(
+                            SyncDbIdx::from_usize(db_idx),
+                            PkgIdx::from_usize(i),
+                        ));
                     }
                 }
                 vec

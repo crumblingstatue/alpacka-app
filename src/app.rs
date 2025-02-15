@@ -71,13 +71,13 @@ impl PacState {
 }
 
 impl AlpackaApp {
-    pub fn new() -> anyhow::Result<Self> {
-        Ok(Self {
+    pub fn new() -> Self {
+        Self {
             pac: PacState::default(),
             ui: UiState::default(),
             cfg: Config::load_or_default(),
             pac_recv: PacState::new_spawned(),
-        })
+        }
     }
     pub fn sync_from_config(&mut self, egui_ctx: &eframe::egui::Context) {
         if let Some(color_theme) = &self.cfg.color_theme {

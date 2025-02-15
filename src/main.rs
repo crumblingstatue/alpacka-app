@@ -9,8 +9,8 @@ mod app;
 mod config;
 mod query_syntax;
 
-fn main() -> anyhow::Result<()> {
-    let mut app = AlpackaApp::new()?;
+fn main() {
+    let mut app = AlpackaApp::new();
     if let Err(e) = eframe::run_native(
         "alpacka",
         NativeOptions::default(),
@@ -21,5 +21,4 @@ fn main() -> anyhow::Result<()> {
     ) {
         eprintln!("Fatal error: {e}");
     }
-    Ok(())
 }

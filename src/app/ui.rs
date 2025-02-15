@@ -31,7 +31,7 @@ pub struct SharedUiState {
 impl Default for UiState {
     fn default() -> Self {
         Self {
-            shared: Default::default(),
+            shared: SharedUiState::default(),
             dock_state: DockState::new(Tab::default_tabs()),
         }
     }
@@ -151,7 +151,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                         handler.out_buf.push('\n');
                     }
                     PacmanChildEvent::Exit(exit_status) => {
-                        handler.exit_status = Some(exit_status.unwrap())
+                        handler.exit_status = Some(exit_status.unwrap());
                     }
                 },
                 Err(TryRecvError::Empty) => {}

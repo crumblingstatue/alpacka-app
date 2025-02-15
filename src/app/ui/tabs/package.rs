@@ -268,7 +268,7 @@ fn pkg_ui<'a, I>(
                             .contains(&pkg_tab.files_filt_string.to_ascii_lowercase())
                     });
                     for file in deduped_files {
-                        let name = format!("/{}", file);
+                        let name = format!("/{file}");
                         if ui.link(&name).clicked() {
                             Command::new("xdg-open").arg(name).status().unwrap();
                         }

@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 #![feature(let_chains, array_windows)]
+#![warn(clippy::pedantic)]
 
 use {app::AlpackaApp, eframe::NativeOptions};
 

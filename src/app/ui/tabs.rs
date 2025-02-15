@@ -57,10 +57,8 @@ impl TabViewer for TabViewState<'_, '_> {
 
     fn force_close(&mut self, tab: &mut Self::Tab) -> bool {
         match tab {
-            Tab::LocalPkgList(_) => false,
+            Tab::LocalPkgList(_) | Tab::RemotePkgList(_) | Tab::ColorTheme => false,
             Tab::Pkg(pkg_tab) => pkg_tab.force_close,
-            Tab::RemotePkgList(_) => false,
-            Tab::ColorTheme => false,
         }
     }
 }

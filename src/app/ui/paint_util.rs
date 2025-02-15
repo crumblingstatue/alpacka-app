@@ -9,9 +9,9 @@ pub fn draw_logo(painter: &egui::Painter, center: egui::Pos2, radius: f32) {
     let end_angle = 3.0 * PI - FRAC_PI_4;
 
     let mut points = vec![center];
-    let num_points = 16;
+    let num_points: u8 = 16;
     for i in 0..=num_points {
-        let t = i as f32 / num_points as f32;
+        let t = f32::from(i) / f32::from(num_points);
         let angle = start_angle + t * (end_angle - start_angle);
         points.push(egui::pos2(
             center.x + radius * angle.cos(),

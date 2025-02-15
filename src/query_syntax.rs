@@ -18,7 +18,7 @@ impl PkgListQuery {
                 "@older" => flags.older = true,
                 "@newer" => flags.newer = true,
                 _ => break,
-            };
+            }
             let next = std::cmp::min(end + 1, head.len());
             head = &head[next..];
         }
@@ -37,7 +37,7 @@ pub struct QueryFlags {
 }
 
 impl QueryFlags {
-    pub fn any(&self) -> bool {
+    pub fn any(self) -> bool {
         self.installed || self.newer || self.older
     }
 }

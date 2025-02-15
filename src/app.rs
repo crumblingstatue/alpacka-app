@@ -84,7 +84,7 @@ impl AlpackaApp {
             self.ui.shared.colorix = Some(Colorix::global(
                 egui_ctx,
                 color_theme.map(ThemeColor::Custom),
-            ))
+            ));
         }
     }
     fn sync_to_config(&mut self) {

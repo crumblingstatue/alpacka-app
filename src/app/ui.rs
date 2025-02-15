@@ -231,13 +231,19 @@ fn spawn_pacman_sy(pac_handler: &mut Option<PacChildHandler>) -> anyhow::Result<
     let send2 = send.clone();
     std::thread::spawn(move || {
         for line in reader.lines() {
-            send.send(PacmanChildEvent::Line(line)).unwrap();
+            if let Err(e) = send.send(PacmanChildEvent::Line(line)) {
+                eprintln!("Send error: {e}");
+            }
         }
-        send.send(PacmanChildEvent::Exit(child.wait())).unwrap();
+        if let Err(e) = send.send(PacmanChildEvent::Exit(child.wait())) {
+            eprintln!("Send error: {e}");
+        }
     });
     std::thread::spawn(move || {
         for line in err_reader.lines() {
-            send2.send(PacmanChildEvent::Line(line)).unwrap();
+            if let Err(e) = send2.send(PacmanChildEvent::Line(line)) {
+                eprintln!("Send error: {e}");
+            }
         }
     });
     Ok(())

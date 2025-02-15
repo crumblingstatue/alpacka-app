@@ -1,5 +1,6 @@
 use {
     super::{AlpackaApp, PacState},
+    anyhow::Context as _,
     cmd::CmdBuf,
     eframe::egui,
     egui_colors::Colorix,
@@ -74,28 +75,9 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                 ui.menu_button("⟳ Sync", |ui| {
                     if ui.button("🔁 Sync databases (pacman -Sy)").clicked() {
                         ui.close_menu();
-                        let mut child = Command::new("pkexec")
-                            .stdout(Stdio::piped())
-                            .stderr(Stdio::piped())
-                            .args(["pacman", "-Sy"])
-                            .spawn()
-                            .unwrap();
-                        let (send, recv) = std::sync::mpsc::channel();
-                        app.ui.shared.pac_handler = Some(PacChildHandler::new(recv));
-                        let reader = BufReader::new(child.stdout.take().unwrap());
-                        let err_reader = BufReader::new(child.stderr.take().unwrap());
-                        let send2 = send.clone();
-                        std::thread::spawn(move || {
-                            for line in reader.lines() {
-                                send.send(PacmanChildEvent::Line(line)).unwrap();
-                            }
-                            send.send(PacmanChildEvent::Exit(child.wait())).unwrap();
-                        });
-                        std::thread::spawn(move || {
-                            for line in err_reader.lines() {
-                                send2.send(PacmanChildEvent::Line(line)).unwrap();
-                            }
-                        });
+                        if let Err(e) = spawn_pacman_sy(&mut app.ui.shared.pac_handler) {
+                            app.ui.shared.error_popup = Some(e.to_string());
+                        }
                     }
                     if ui.button("⟳ Refresh package list").clicked() {
                         ui.close_menu();
@@ -228,4 +210,29 @@ pub fn central_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                 ui: &mut app.ui.shared,
             },
         );
+}
+
+fn spawn_pacman_sy(pac_handler: &mut Option<PacChildHandler>) -> anyhow::Result<()> {
+    let mut child = Command::new("pkexec")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .args(["pacman", "-Sy"])
+        .spawn()?;
+    let (send, recv) = std::sync::mpsc::channel();
+    *pac_handler = Some(PacChildHandler::new(recv));
+    let reader = BufReader::new(child.stdout.take().context("Missing child stdout")?);
+    let err_reader = BufReader::new(child.stderr.take().context("Missing child stderr")?);
+    let send2 = send.clone();
+    std::thread::spawn(move || {
+        for line in reader.lines() {
+            send.send(PacmanChildEvent::Line(line)).unwrap();
+        }
+        send.send(PacmanChildEvent::Exit(child.wait())).unwrap();
+    });
+    std::thread::spawn(move || {
+        for line in err_reader.lines() {
+            send2.send(PacmanChildEvent::Line(line)).unwrap();
+        }
+    });
+    Ok(())
 }

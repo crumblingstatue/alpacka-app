@@ -60,6 +60,26 @@ impl PacChildHandler {
             out_buf: String::new(),
         }
     }
+    pub fn handle_messages(&mut self) -> anyhow::Result<()> {
+        if let Some(recv) = self.recv.as_mut() {
+            match recv.try_recv() {
+                Ok(ev) => match ev {
+                    PacmanChildEvent::Line(result) => {
+                        self.out_buf.push_str(&result?);
+                        self.out_buf.push('\n');
+                    }
+                    PacmanChildEvent::Exit(exit_status) => {
+                        self.exit_status = Some(exit_status?);
+                    }
+                },
+                Err(TryRecvError::Empty) => {}
+                Err(TryRecvError::Disconnected) => {
+                    self.recv = None;
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
@@ -132,22 +152,8 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
         });
     let mut close_handler = false;
     if let Some(handler) = &mut app.ui.shared.pac_handler {
-        if let Some(recv) = handler.recv.as_mut() {
-            match recv.try_recv() {
-                Ok(ev) => match ev {
-                    PacmanChildEvent::Line(result) => {
-                        handler.out_buf.push_str(&result.unwrap());
-                        handler.out_buf.push('\n');
-                    }
-                    PacmanChildEvent::Exit(exit_status) => {
-                        handler.exit_status = Some(exit_status.unwrap());
-                    }
-                },
-                Err(TryRecvError::Empty) => {}
-                Err(TryRecvError::Disconnected) => {
-                    handler.recv = None;
-                }
-            }
+        if let Err(e) = handler.handle_messages() {
+            eprintln!("pacman handler message error: {e}");
         }
         if !handler.out_buf.is_empty() {
             egui::Modal::new(egui::Id::new("pacman output modal")).show(ctx, |ui| {

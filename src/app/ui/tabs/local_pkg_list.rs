@@ -1,11 +1,11 @@
 use {
     super::{PkgListQuery, PkgListState},
     crate::{
-        alpm_util::PkgId,
         app::{
             PacState,
             ui::{SharedUiState, cmd::Cmd},
         },
+        util::PkgId,
     },
     eframe::egui,
     egui_extras::{Column, TableBuilder},

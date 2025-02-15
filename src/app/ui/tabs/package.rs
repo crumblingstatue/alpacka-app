@@ -1,11 +1,11 @@
 use {
     super::remote_pkg_list::installed_label_for_remote_pkg,
     crate::{
-        alpm_util::{PkgId, deduped_files},
         app::{
             PacState,
             ui::{SharedUiState, cmd::Cmd},
         },
+        util::{PkgId, deduped_files},
     },
     alpacka::{Pkg, dep::PkgDepsExt},
     eframe::egui,

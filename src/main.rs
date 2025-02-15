@@ -4,10 +4,10 @@
 
 use {app::AlpackaApp, eframe::NativeOptions};
 
-mod alpm_util;
 mod app;
 mod config;
 mod query_syntax;
+mod util;
 
 fn main() {
     let mut app = AlpackaApp::new();

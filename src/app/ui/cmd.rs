@@ -1,6 +1,6 @@
 use {
     super::{Tab, tabs::package::PkgTab},
-    crate::{alpm_util::PkgId, app::AlpackaApp},
+    crate::{app::AlpackaApp, util::PkgId},
     eframe::egui,
     egui_dock::{Node, NodeIndex, TabIndex},
 };

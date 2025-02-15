@@ -18,57 +18,7 @@ pub fn ui(
     tab_state: &mut PkgListState,
 ) {
     egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
-        ui.horizontal(|ui| {
-            let re =
-                ui.add(egui::TextEdit::singleline(&mut tab_state.query_src).hint_text("🔍 Query"));
-            if ui.input(|inp| inp.key_pressed(egui::Key::Num2) && inp.modifiers.shift) {
-                re.request_focus();
-            }
-            if re.changed() {
-                tab_state.query = PkgListQuery::compile(&tab_state.query_src);
-                pac.alpacka_filt_remote_pkg_list =
-                    pac.alpacka_syncdbs
-                        .iter()
-                        .flat_map(|syncdb| {
-                            syncdb
-                                .pkgs
-                                .iter()
-                                .enumerate()
-                                .map(|(idx, pkg)| (syncdb.name.clone(), idx, pkg))
-                        })
-                        .filter_map(|(db, idx, pkg)| {
-                            let filt_lo = tab_state.query.string.to_ascii_lowercase();
-                            let mut flags = tab_state.query.flags;
-                            if flags.installed || flags.newer || flags.older {
-                                if let Some((_, cmp)) =
-                                    remote_local_cmp(&pkg.desc, &pac.alpaca_local_pkg_list)
-                                {
-                                    flags.installed = false;
-                                    match cmp {
-                                        RemoteLocalCmp::Newer => flags.newer = false,
-                                        RemoteLocalCmp::Same => {}
-                                        RemoteLocalCmp::Older => flags.older = false,
-                                    }
-                                }
-                            }
-                            if flags.any() {
-                                return None;
-                            }
-                            (pkg.desc.name.contains(&filt_lo)
-                                || pkg.desc.desc.as_ref().is_some_and(|desc| {
-                                    desc.to_ascii_lowercase().contains(&filt_lo)
-                                }))
-                            .then_some((db, idx))
-                        })
-                        .collect();
-            }
-            ui.spacing();
-            ui.label(format!(
-                "{} packages listed",
-                pac.alpacka_filt_remote_pkg_list.len()
-            ));
-        });
-        ui.add_space(4.0);
+        top_panel_ui(pac, tab_state, ui);
     });
     pkg_list_table_builder(ui)
         .header(18.0, |mut row| {
@@ -123,6 +73,61 @@ pub fn ui(
                 });
             });
         });
+}
+
+fn top_panel_ui(pac: &mut PacState, tab_state: &mut PkgListState, ui: &mut egui::Ui) {
+    ui.horizontal(|ui| {
+        let re = ui.add(egui::TextEdit::singleline(&mut tab_state.query_src).hint_text("🔍 Query"));
+        if ui.input(|inp| inp.key_pressed(egui::Key::Num2) && inp.modifiers.shift) {
+            re.request_focus();
+        }
+        if re.changed() {
+            tab_state.query = PkgListQuery::compile(&tab_state.query_src);
+            pac.alpacka_filt_remote_pkg_list = pac
+                .alpacka_syncdbs
+                .iter()
+                .flat_map(|syncdb| {
+                    syncdb
+                        .pkgs
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, pkg)| (syncdb.name.clone(), idx, pkg))
+                })
+                .filter_map(|(db, idx, pkg)| {
+                    let filt_lo = tab_state.query.string.to_ascii_lowercase();
+                    let mut flags = tab_state.query.flags;
+                    if flags.installed || flags.newer || flags.older {
+                        if let Some((_, cmp)) =
+                            remote_local_cmp(&pkg.desc, &pac.alpaca_local_pkg_list)
+                        {
+                            flags.installed = false;
+                            match cmp {
+                                RemoteLocalCmp::Newer => flags.newer = false,
+                                RemoteLocalCmp::Same => {}
+                                RemoteLocalCmp::Older => flags.older = false,
+                            }
+                        }
+                    }
+                    if flags.any() {
+                        return None;
+                    }
+                    (pkg.desc.name.contains(&filt_lo)
+                        || pkg
+                            .desc
+                            .desc
+                            .as_ref()
+                            .is_some_and(|desc| desc.to_ascii_lowercase().contains(&filt_lo)))
+                    .then_some((db, idx))
+                })
+                .collect();
+        }
+        ui.spacing();
+        ui.label(format!(
+            "{} packages listed",
+            pac.alpacka_filt_remote_pkg_list.len()
+        ));
+    });
+    ui.add_space(4.0);
 }
 
 pub fn remote_local_cmp<'p>(

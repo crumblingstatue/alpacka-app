@@ -22,10 +22,10 @@ struct SyncDb {
 
 #[derive(Default)]
 struct PacState {
-    alpaca_local_pkg_list: Vec<alpacka::Pkg>,
-    alpacka_filt_pkg_list: Vec<usize>,
-    alpacka_syncdbs: Vec<SyncDb>,
-    alpacka_filt_remote_pkg_list: Vec<(SmolStr, usize)>,
+    local_pkg_list: Vec<alpacka::Pkg>,
+    filt_local_pkgs: Vec<usize>,
+    filt_remote_pkgs: Vec<(SmolStr, usize)>,
+    syncdbs: Vec<SyncDb>,
 }
 
 impl PacState {
@@ -54,9 +54,9 @@ impl PacState {
             });
         }
         Ok(Self {
-            alpacka_filt_pkg_list: (0..local_db.len()).collect(),
-            alpaca_local_pkg_list: local_db,
-            alpacka_filt_remote_pkg_list: {
+            filt_local_pkgs: (0..local_db.len()).collect(),
+            local_pkg_list: local_db,
+            filt_remote_pkgs: {
                 let mut vec = Vec::new();
                 for db in &syncdbs {
                     for i in 0..db.pkgs.len() {
@@ -65,7 +65,7 @@ impl PacState {
                 }
                 vec
             },
-            alpacka_syncdbs: syncdbs,
+            syncdbs,
         })
     }
 }

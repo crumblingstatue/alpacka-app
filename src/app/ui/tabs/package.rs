@@ -52,10 +52,10 @@ pub fn ui(ui: &mut egui::Ui, pac: &PacState, ui_state: &mut SharedUiState, pkg_t
             ui,
             ui_state,
             pkg_tab,
-            pac.alpacka_syncdbs
+            pac.syncdbs
                 .iter()
                 .flat_map(|db| db.pkgs.iter().map(|pkg| (pkg, db.name.as_str()))),
-            &pac.alpaca_local_pkg_list,
+            &pac.local_pkg_list,
             remote,
         );
     } else {
@@ -63,8 +63,8 @@ pub fn ui(ui: &mut egui::Ui, pac: &PacState, ui_state: &mut SharedUiState, pkg_t
             ui,
             ui_state,
             pkg_tab,
-            pac.alpaca_local_pkg_list.iter().map(|pkg| (pkg, "local")),
-            &pac.alpaca_local_pkg_list,
+            pac.local_pkg_list.iter().map(|pkg| (pkg, "local")),
+            &pac.local_pkg_list,
             remote,
         );
     }

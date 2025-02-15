@@ -26,8 +26,8 @@ pub fn ui(
             }
             if re.changed() {
                 tab_state.query = PkgListQuery::compile(&tab_state.query_src);
-                pac.alpacka_filt_pkg_list =
-                    pac.alpaca_local_pkg_list
+                pac.filt_local_pkgs =
+                    pac.local_pkg_list
                         .iter()
                         .enumerate()
                         .filter_map(|(i, pkg)| {
@@ -46,10 +46,7 @@ pub fn ui(
                         .collect();
             }
             ui.spacing();
-            ui.label(format!(
-                "{} packages listed",
-                pac.alpacka_filt_pkg_list.len()
-            ));
+            ui.label(format!("{} packages listed", pac.filt_local_pkgs.len()));
         });
         ui.add_space(4.0);
     });
@@ -67,9 +64,9 @@ pub fn ui(
         })
         .body(|mut body| {
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-            body.rows(22.0, pac.alpacka_filt_pkg_list.len(), |mut row| {
-                let idx = pac.alpacka_filt_pkg_list[row.index()];
-                let pkg = &pac.alpaca_local_pkg_list[idx];
+            body.rows(22.0, pac.filt_local_pkgs.len(), |mut row| {
+                let idx = pac.filt_local_pkgs[row.index()];
+                let pkg = &pac.local_pkg_list[idx];
                 row.col(|ui| {
                     if ui.link(pkg.desc.name.as_str()).clicked() {
                         ui_state

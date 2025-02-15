@@ -22,12 +22,12 @@ impl TabViewer for TabViewState<'_, '_> {
     fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
         match tab {
             Tab::LocalPkgList(_) => {
-                format!("Local packages ({})", self.pac.alpaca_local_pkg_list.len()).into()
+                format!("Local packages ({})", self.pac.local_pkg_list.len()).into()
             }
             Tab::RemotePkgList(_) => format!(
                 "Remote packages ({})",
                 self.pac
-                    .alpacka_syncdbs
+                    .syncdbs
                     .iter()
                     .map(|db| db.pkgs.len())
                     .sum::<usize>()

@@ -34,10 +34,10 @@ pub fn ui(
         })
         .body(|mut body| {
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-            let list = &pac.alpacka_filt_remote_pkg_list;
+            let list = &pac.filt_remote_pkgs;
             body.rows(22.0, list.len(), |mut row| {
                 let (db_name, idx) = &list[row.index()];
-                let Some(db) = &pac.alpacka_syncdbs.iter().find(|db| &db.name == db_name) else {
+                let Some(db) = &pac.syncdbs.iter().find(|db| &db.name == db_name) else {
                     row.col(|ui| {
                         ui.label(format!("<Error: can't find db '{db_name}'>"));
                     });
@@ -61,7 +61,7 @@ pub fn ui(
                             ui,
                             ui_state,
                             &pkg.desc,
-                            &pac.alpaca_local_pkg_list,
+                            &pac.local_pkg_list,
                         );
                     });
                 });
@@ -83,8 +83,8 @@ fn top_panel_ui(pac: &mut PacState, tab_state: &mut PkgListState, ui: &mut egui:
         }
         if re.changed() {
             tab_state.query = PkgListQuery::compile(&tab_state.query_src);
-            pac.alpacka_filt_remote_pkg_list = pac
-                .alpacka_syncdbs
+            pac.filt_remote_pkgs = pac
+                .syncdbs
                 .iter()
                 .flat_map(|syncdb| {
                     syncdb
@@ -97,9 +97,7 @@ fn top_panel_ui(pac: &mut PacState, tab_state: &mut PkgListState, ui: &mut egui:
                     let filt_lo = tab_state.query.string.to_ascii_lowercase();
                     let mut flags = tab_state.query.flags;
                     if flags.installed || flags.newer || flags.older {
-                        if let Some((_, cmp)) =
-                            remote_local_cmp(&pkg.desc, &pac.alpaca_local_pkg_list)
-                        {
+                        if let Some((_, cmp)) = remote_local_cmp(&pkg.desc, &pac.local_pkg_list) {
                             flags.installed = false;
                             match cmp {
                                 RemoteLocalCmp::Newer => flags.newer = false,
@@ -122,10 +120,7 @@ fn top_panel_ui(pac: &mut PacState, tab_state: &mut PkgListState, ui: &mut egui:
                 .collect();
         }
         ui.spacing();
-        ui.label(format!(
-            "{} packages listed",
-            pac.alpacka_filt_remote_pkg_list.len()
-        ));
+        ui.label(format!("{} packages listed", pac.filt_remote_pkgs.len()));
     });
     ui.add_space(4.0);
 }

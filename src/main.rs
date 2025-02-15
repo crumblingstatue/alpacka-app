@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 #![feature(let_chains, array_windows)]
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, clippy::unwrap_used)]
 
 use {app::AlpackaApp, eframe::NativeOptions};
 
@@ -11,14 +11,15 @@ mod query_syntax;
 
 fn main() -> anyhow::Result<()> {
     let mut app = AlpackaApp::new()?;
-    eframe::run_native(
+    if let Err(e) = eframe::run_native(
         "alpacka",
         NativeOptions::default(),
         Box::new(move |cc| {
             app.sync_from_config(&cc.egui_ctx);
             Ok(Box::new(app))
         }),
-    )
-    .unwrap();
+    ) {
+        eprintln!("Fatal error: {e}");
+    }
     Ok(())
 }

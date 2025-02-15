@@ -28,7 +28,12 @@ impl TabViewer for TabViewState<'_, '_> {
             .into(),
             Tab::RemotePkgList(_) => format!(
                 "Remote packages ({})",
-                self.pac.dbs.iter().map(|db| db.pkgs.len()).sum::<usize>()
+                self.pac
+                    .dbs
+                    .iter()
+                    .skip(1)
+                    .map(|db| db.pkgs.len())
+                    .sum::<usize>()
             )
             .into(),
             Tab::Pkg(pkg) => format!("📦 {}", pkg.id).into(),

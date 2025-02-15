@@ -84,6 +84,7 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
                 .dbs
                 .iter()
                 .enumerate()
+                .skip(1)
                 .flat_map(|(db_idx, syncdb)| {
                     syncdb
                         .pkgs

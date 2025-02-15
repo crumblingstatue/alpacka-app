@@ -102,7 +102,7 @@ impl Packages {
             filt_local_pkgs: (0..local_len).map(PkgIdx::from_usize).collect(),
             filt_remote_pkgs: {
                 let mut vec = Vec::new();
-                for (db_idx, db) in syncdbs.iter().enumerate() {
+                for (db_idx, db) in syncdbs.iter().enumerate().skip(1) {
                     for i in 0..db.pkgs.len() {
                         vec.push(PkgRef::from_components(
                             SyncDbIdx::from_usize(db_idx),

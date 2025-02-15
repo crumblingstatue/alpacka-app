@@ -2,7 +2,7 @@ use {
     super::{PkgListQuery, PkgListState, local_pkg_list::pkg_list_table_builder},
     crate::{
         app::{
-            PacState, PkgIdx,
+            PacState, PkgIdx, SyncDbIdx,
             ui::{SharedUiState, cmd::Cmd},
         },
         util::PkgId,
@@ -36,10 +36,10 @@ pub fn ui(
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
             let list = &pac.filt_remote_pkgs;
             body.rows(22.0, list.len(), |mut row| {
-                let (db_name, idx) = &list[row.index()];
-                let Some(db) = &pac.syncdbs.iter().find(|db| &db.name == db_name) else {
+                let (db_idx, idx) = &list[row.index()];
+                let Some(db) = pac.syncdbs.get(db_idx.to_usize()) else {
                     row.col(|ui| {
-                        ui.label(format!("<Error: can't find db '{db_name}'>"));
+                        ui.label(format!("<Error: can't find db {db_idx:?}>"));
                     });
                     return;
                 };
@@ -51,6 +51,7 @@ pub fn ui(
                 };
                 row.col(|ui| {
                     ui.horizontal(|ui| {
+                        let db_name = &pac.syncdbs[db_idx.to_usize()].name;
                         if ui.link(format!("{db_name}/{}", pkg.desc.name)).clicked() {
                             ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
                                 db_name,
@@ -86,12 +87,13 @@ fn top_panel_ui(pac: &mut PacState, tab_state: &mut PkgListState, ui: &mut egui:
             pac.filt_remote_pkgs = pac
                 .syncdbs
                 .iter()
-                .flat_map(|syncdb| {
+                .enumerate()
+                .flat_map(|(db_idx, syncdb)| {
                     syncdb
                         .pkgs
                         .iter()
                         .enumerate()
-                        .map(|(idx, pkg)| (syncdb.name.clone(), idx, pkg))
+                        .map(move |(idx, pkg)| (SyncDbIdx::from_usize(db_idx), idx, pkg))
                 })
                 .filter_map(|(db, idx, pkg)| {
                     let filt_lo = tab_state.query.string.to_ascii_lowercase();

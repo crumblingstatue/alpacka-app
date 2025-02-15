@@ -37,11 +37,28 @@ impl PkgIdx {
     }
 }
 
+/// Used to index into a sync db list
+#[derive(Clone, Copy, Debug)]
+pub struct SyncDbIdx(u8);
+
+impl SyncDbIdx {
+    /// Create from an usize index.
+    ///
+    /// It's expected that the usize doesn't exceed `u8::MAX` (there won't be hundreds of sync dbs).
+    #[expect(clippy::cast_possible_truncation)]
+    fn from_usize(idx: usize) -> Self {
+        Self(idx as u8)
+    }
+    fn to_usize(self) -> usize {
+        usize::from(self.0)
+    }
+}
+
 #[derive(Default)]
 struct PacState {
     local_pkg_list: Vec<alpacka::Pkg>,
     filt_local_pkgs: Vec<PkgIdx>,
-    filt_remote_pkgs: Vec<(SmolStr, PkgIdx)>,
+    filt_remote_pkgs: Vec<(SyncDbIdx, PkgIdx)>,
     syncdbs: Vec<SyncDb>,
 }
 
@@ -75,9 +92,9 @@ impl PacState {
             local_pkg_list: local_db,
             filt_remote_pkgs: {
                 let mut vec = Vec::new();
-                for db in &syncdbs {
+                for (db_idx, db) in syncdbs.iter().enumerate() {
                     for i in 0..db.pkgs.len() {
-                        vec.push((db.name.clone(), PkgIdx::from_usize(i)));
+                        vec.push((SyncDbIdx::from_usize(db_idx), PkgIdx::from_usize(i)));
                     }
                 }
                 vec

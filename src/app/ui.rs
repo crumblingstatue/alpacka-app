@@ -26,6 +26,7 @@ pub struct SharedUiState {
     cmd: CmdBuf,
     pub colorix: Option<Colorix>,
     pac_handler: Option<PacChildHandler>,
+    pub error_popup: Option<String>,
 }
 
 impl Default for UiState {
@@ -118,6 +119,12 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                         }
                     }
                 });
+                ui.menu_button("❓ Debug", |ui| {
+                    if ui.button("Error popup test").clicked() {
+                        ui.close_menu();
+                        app.ui.shared.error_popup = Some("This is a test error popup".into());
+                    }
+                });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     match app.pac_recv.try_recv() {
                         Ok(pac) => match pac {
@@ -192,6 +199,21 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
     }
     if close_handler {
         app.ui.shared.pac_handler = None;
+    }
+    if let Some(err) = &app.ui.shared.error_popup {
+        let mut close = false;
+        egui::Modal::new("error_modal".into()).show(ctx, |ui| {
+            ui.heading("Error");
+            ui.separator();
+            ui.label(err);
+            ui.separator();
+            if ui.button("Close").clicked() {
+                close = true;
+            }
+        });
+        if close {
+            app.ui.shared.error_popup = None;
+        }
     }
 }
 

@@ -270,7 +270,9 @@ fn pkg_ui<'a, I>(
                     for file in deduped_files {
                         let name = format!("/{file}");
                         if ui.link(&name).clicked() {
-                            Command::new("xdg-open").arg(name).status().unwrap();
+                            if let Err(e) = Command::new("xdg-open").arg(name).status() {
+                                ui_state.error_popup = Some(e.to_string());
+                            }
                         }
                     }
                 }

@@ -28,7 +28,8 @@ pub fn ui(
             if re.changed() {
                 tab_state.query = PkgListQuery::compile(&tab_state.query_src);
                 pac.filt_local_pkgs =
-                    pac.local_pkg_list
+                    pac.dbs[0]
+                        .pkgs
                         .iter()
                         .enumerate()
                         .filter_map(|(i, pkg)| {
@@ -67,7 +68,7 @@ pub fn ui(
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
             body.rows(22.0, pac.filt_local_pkgs.len(), |mut row| {
                 let idx = pac.filt_local_pkgs[row.index()];
-                let pkg = &pac.local_pkg_list[idx.to_usize()];
+                let pkg = &pac.dbs[0].pkgs[idx.to_usize()];
                 row.col(|ui| {
                     if ui.link(pkg.desc.name.as_str()).clicked() {
                         ui_state

@@ -38,7 +38,7 @@ pub fn ui(
             let list = &pac.filt_remote_pkgs;
             body.rows(22.0, list.len(), |mut row| {
                 let (db_idx, idx) = list[row.index()].into_components();
-                let Some(db) = pac.syncdbs.get(db_idx.to_usize()) else {
+                let Some(db) = pac.dbs.get(db_idx.to_usize()) else {
                     row.col(|ui| {
                         ui.label(format!("<Error: can't find db {db_idx:?}>"));
                     });
@@ -52,19 +52,14 @@ pub fn ui(
                 };
                 row.col(|ui| {
                     ui.horizontal(|ui| {
-                        let db_name = &pac.syncdbs[db_idx.to_usize()].name;
+                        let db_name = &pac.dbs[db_idx.to_usize()].name;
                         if ui.link(format!("{db_name}/{}", pkg.desc.name)).clicked() {
                             ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
                                 db_name,
                                 pkg.desc.name.as_str(),
                             )));
                         }
-                        installed_label_for_remote_pkg(
-                            ui,
-                            ui_state,
-                            &pkg.desc,
-                            &pac.local_pkg_list,
-                        );
+                        installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, &pac.dbs[0].pkgs);
                     });
                 });
                 row.col(|ui| {
@@ -86,7 +81,7 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
         if re.changed() {
             tab_state.query = PkgListQuery::compile(&tab_state.query_src);
             pac.filt_remote_pkgs = pac
-                .syncdbs
+                .dbs
                 .iter()
                 .enumerate()
                 .flat_map(|(db_idx, syncdb)| {
@@ -100,7 +95,7 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
                     let filt_lo = tab_state.query.string.to_ascii_lowercase();
                     let mut flags = tab_state.query.flags;
                     if flags.installed || flags.newer || flags.older {
-                        if let Some((_, cmp)) = remote_local_cmp(&pkg.desc, &pac.local_pkg_list) {
+                        if let Some((_, cmp)) = remote_local_cmp(&pkg.desc, &pac.dbs[0].pkgs) {
                             flags.installed = false;
                             match cmp {
                                 RemoteLocalCmp::Newer => flags.newer = false,

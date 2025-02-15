@@ -56,17 +56,16 @@ fn test_pkg_ref_cons() {
     assert_eq!(pkg_ref.into_components(), (SyncDbIdx(42), PkgIdx(617)));
 }
 
-pub struct SyncDb {
+pub struct Db {
     pub name: SmolStr,
     pub pkgs: Vec<Pkg>,
 }
 
 #[derive(Default)]
 pub struct Packages {
-    pub local_pkg_list: Vec<Pkg>,
     pub filt_local_pkgs: Vec<PkgIdx>,
     pub filt_remote_pkgs: Vec<PkgRef>,
-    pub syncdbs: Vec<SyncDb>,
+    pub dbs: Vec<Db>,
 }
 
 impl Packages {
@@ -79,6 +78,11 @@ impl Packages {
         let mut local_db = alpacka::read_local_db()?;
         local_db.sort_by(|a, b| a.desc.name.cmp(&b.desc.name));
         let mut syncdbs = Vec::new();
+        let local_len = local_db.len();
+        syncdbs.push(Db {
+            name: "local".into(),
+            pkgs: local_db,
+        });
         for db_name in [
             "core-testing",
             "core",
@@ -89,14 +93,13 @@ impl Packages {
         ] {
             let mut pkgs = alpacka::read_syncdb(db_name)?;
             pkgs.sort_by(|a, b| a.desc.name.cmp(&b.desc.name));
-            syncdbs.push(SyncDb {
+            syncdbs.push(Db {
                 name: db_name.into(),
                 pkgs,
             });
         }
         Ok(Self {
-            filt_local_pkgs: (0..local_db.len()).map(PkgIdx::from_usize).collect(),
-            local_pkg_list: local_db,
+            filt_local_pkgs: (0..local_len).map(PkgIdx::from_usize).collect(),
             filt_remote_pkgs: {
                 let mut vec = Vec::new();
                 for (db_idx, db) in syncdbs.iter().enumerate() {
@@ -109,7 +112,7 @@ impl Packages {
                 }
                 vec
             },
-            syncdbs,
+            dbs: syncdbs,
         })
     }
 }

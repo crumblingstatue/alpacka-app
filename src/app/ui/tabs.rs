@@ -21,16 +21,14 @@ impl TabViewer for TabViewState<'_, '_> {
 
     fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
         match tab {
-            Tab::LocalPkgList(_) => {
-                format!("Local packages ({})", self.pac.local_pkg_list.len()).into()
-            }
+            Tab::LocalPkgList(_) => format!(
+                "Local packages ({})",
+                self.pac.dbs.first().map_or(0, |db| db.pkgs.len())
+            )
+            .into(),
             Tab::RemotePkgList(_) => format!(
                 "Remote packages ({})",
-                self.pac
-                    .syncdbs
-                    .iter()
-                    .map(|db| db.pkgs.len())
-                    .sum::<usize>()
+                self.pac.dbs.iter().map(|db| db.pkgs.len()).sum::<usize>()
             )
             .into(),
             Tab::Pkg(pkg) => format!("📦 {}", pkg.id).into(),

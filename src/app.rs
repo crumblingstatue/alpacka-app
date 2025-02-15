@@ -20,11 +20,28 @@ struct SyncDb {
     pkgs: Vec<Pkg>,
 }
 
+/// Used to index into a package list in order to refer to a package efficiently
+#[derive(Clone, Copy, Debug)]
+pub struct PkgIdx(u32);
+
+impl PkgIdx {
+    /// Create from an usize index.
+    ///
+    /// It's expected that the usize doesn't exceed `u32::MAX` (there won't be billions of packages).
+    #[expect(clippy::cast_possible_truncation)]
+    fn from_usize(idx: usize) -> Self {
+        Self(idx as u32)
+    }
+    fn to_usize(self) -> usize {
+        self.0 as usize
+    }
+}
+
 #[derive(Default)]
 struct PacState {
     local_pkg_list: Vec<alpacka::Pkg>,
-    filt_local_pkgs: Vec<usize>,
-    filt_remote_pkgs: Vec<(SmolStr, usize)>,
+    filt_local_pkgs: Vec<PkgIdx>,
+    filt_remote_pkgs: Vec<(SmolStr, PkgIdx)>,
     syncdbs: Vec<SyncDb>,
 }
 
@@ -54,13 +71,13 @@ impl PacState {
             });
         }
         Ok(Self {
-            filt_local_pkgs: (0..local_db.len()).collect(),
+            filt_local_pkgs: (0..local_db.len()).map(PkgIdx::from_usize).collect(),
             local_pkg_list: local_db,
             filt_remote_pkgs: {
                 let mut vec = Vec::new();
                 for db in &syncdbs {
                     for i in 0..db.pkgs.len() {
-                        vec.push((db.name.clone(), i));
+                        vec.push((db.name.clone(), PkgIdx::from_usize(i)));
                     }
                 }
                 vec

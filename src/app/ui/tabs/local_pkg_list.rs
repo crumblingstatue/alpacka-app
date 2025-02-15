@@ -2,7 +2,7 @@ use {
     super::{PkgListQuery, PkgListState},
     crate::{
         app::{
-            PacState,
+            PacState, PkgIdx,
             ui::{SharedUiState, cmd::Cmd},
         },
         util::PkgId,
@@ -41,7 +41,7 @@ pub fn ui(
                                     .provides
                                     .iter()
                                     .any(|dep| dep.name.contains(&filt_lo)))
-                            .then_some(i)
+                            .then_some(PkgIdx::from_usize(i))
                         })
                         .collect();
             }
@@ -66,7 +66,7 @@ pub fn ui(
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
             body.rows(22.0, pac.filt_local_pkgs.len(), |mut row| {
                 let idx = pac.filt_local_pkgs[row.index()];
-                let pkg = &pac.local_pkg_list[idx];
+                let pkg = &pac.local_pkg_list[idx.to_usize()];
                 row.col(|ui| {
                     if ui.link(pkg.desc.name.as_str()).clicked() {
                         ui_state

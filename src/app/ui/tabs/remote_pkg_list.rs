@@ -2,7 +2,7 @@ use {
     super::{PkgListQuery, PkgListState, local_pkg_list::pkg_list_table_builder},
     crate::{
         app::{
-            PacState,
+            PacState, PkgIdx,
             ui::{SharedUiState, cmd::Cmd},
         },
         util::PkgId,
@@ -43,9 +43,9 @@ pub fn ui(
                     });
                     return;
                 };
-                let Some(pkg) = db.pkgs.get(*idx) else {
+                let Some(pkg) = db.pkgs.get(idx.to_usize()) else {
                     row.col(|ui| {
-                        ui.label(format!("<Error: invalid index: {idx}>"));
+                        ui.label(format!("<Error: invalid index: {idx:?}>"));
                     });
                     return;
                 };
@@ -115,7 +115,7 @@ fn top_panel_ui(pac: &mut PacState, tab_state: &mut PkgListState, ui: &mut egui:
                             .desc
                             .as_ref()
                             .is_some_and(|desc| desc.to_ascii_lowercase().contains(&filt_lo)))
-                    .then_some((db, idx))
+                    .then_some((db, PkgIdx::from_usize(idx)))
                 })
                 .collect();
         }

@@ -6,6 +6,7 @@ use {app::AlpackaApp, eframe::NativeOptions};
 
 mod app;
 mod config;
+mod packages;
 mod query_syntax;
 mod util;
 

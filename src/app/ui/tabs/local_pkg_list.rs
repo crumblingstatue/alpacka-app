@@ -2,9 +2,10 @@ use {
     super::{PkgListQuery, PkgListState},
     crate::{
         app::{
-            PacState, PkgIdx,
+            Packages,
             ui::{SharedUiState, cmd::Cmd},
         },
+        packages::PkgIdx,
         util::PkgId,
     },
     eframe::egui,
@@ -13,7 +14,7 @@ use {
 
 pub fn ui(
     ui: &mut egui::Ui,
-    pac: &mut PacState,
+    pac: &mut Packages,
     ui_state: &mut SharedUiState,
     tab_state: &mut PkgListState,
 ) {

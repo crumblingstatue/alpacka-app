@@ -2,9 +2,10 @@ use {
     super::{PkgListQuery, PkgListState, local_pkg_list::pkg_list_table_builder},
     crate::{
         app::{
-            PacState, PkgIdx, SyncDbIdx,
+            Packages,
             ui::{SharedUiState, cmd::Cmd},
         },
+        packages::{PkgIdx, SyncDbIdx},
         util::PkgId,
     },
     alpacka::{Pkg, PkgDesc},
@@ -13,7 +14,7 @@ use {
 
 pub fn ui(
     ui: &mut egui::Ui,
-    pac: &mut PacState,
+    pac: &mut Packages,
     ui_state: &mut SharedUiState,
     tab_state: &mut PkgListState,
 ) {
@@ -76,7 +77,7 @@ pub fn ui(
         });
 }
 
-fn top_panel_ui(pac: &mut PacState, tab_state: &mut PkgListState, ui: &mut egui::Ui) {
+fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         let re = ui.add(egui::TextEdit::singleline(&mut tab_state.query_src).hint_text("🔍 Query"));
         if ui.input(|inp| inp.key_pressed(egui::Key::Num2) && inp.modifiers.shift) {

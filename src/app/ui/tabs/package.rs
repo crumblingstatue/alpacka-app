@@ -2,7 +2,7 @@ use {
     super::remote_pkg_list::installed_label_for_remote_pkg,
     crate::{
         app::{
-            PacState,
+            Packages,
             ui::{SharedUiState, cmd::Cmd},
         },
         util::{PkgId, deduped_files},
@@ -38,7 +38,7 @@ enum PkgTabTab {
     Files,
 }
 
-pub fn ui(ui: &mut egui::Ui, pac: &PacState, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab) {
+pub fn ui(ui: &mut egui::Ui, pac: &Packages, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab) {
     if ui.input(|inp| {
         let esc = inp.key_pressed(egui::Key::Escape);
         let ctrl_w = inp.modifiers.ctrl && inp.key_pressed(egui::Key::W);

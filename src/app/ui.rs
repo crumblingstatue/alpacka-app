@@ -1,5 +1,5 @@
 use {
-    super::{AlpackaApp, PacState},
+    super::{AlpackaApp, Packages},
     anyhow::Context as _,
     cmd::CmdBuf,
     eframe::egui,
@@ -101,7 +101,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                     }
                     if ui.button("⟳ Refresh package list").clicked() {
                         ui.close_menu();
-                        app.pac_recv = PacState::new_spawned();
+                        app.pac_recv = Packages::new_spawned();
                     }
                 });
                 ui.menu_button("☰ Preferences", |ui| {
@@ -226,7 +226,7 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
                     ui.label(format!("Pacman exited ({status})"));
                     if ui.button("Close").clicked() {
                         close_handler = true;
-                        app.pac_recv = PacState::new_spawned();
+                        app.pac_recv = Packages::new_spawned();
                     }
                 }
             });

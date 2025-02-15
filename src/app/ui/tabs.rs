@@ -1,6 +1,6 @@
 use {
     super::SharedUiState,
-    crate::{app::PacState, query_syntax::PkgListQuery},
+    crate::{app::Packages, query_syntax::PkgListQuery},
     eframe::egui,
     egui_dock::TabViewer,
     package::PkgTab,
@@ -12,7 +12,7 @@ pub mod package;
 pub mod remote_pkg_list;
 
 pub struct TabViewState<'pac, 'ui> {
-    pub pac: &'pac mut PacState,
+    pub pac: &'pac mut Packages,
     pub ui: &'ui mut SharedUiState,
 }
 

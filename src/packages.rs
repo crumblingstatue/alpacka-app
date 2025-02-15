@@ -41,7 +41,7 @@ pub struct SyncDb {
 
 #[derive(Default)]
 pub struct Packages {
-    pub local_pkg_list: Vec<alpacka::Pkg>,
+    pub local_pkg_list: Vec<Pkg>,
     pub filt_local_pkgs: Vec<PkgIdx>,
     pub filt_remote_pkgs: Vec<(SyncDbIdx, PkgIdx)>,
     pub syncdbs: Vec<SyncDb>,

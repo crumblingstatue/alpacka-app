@@ -132,7 +132,7 @@ dependencies = [
 [[package]]
 name = "alpacka"
 version = "0.1.0"
-source = "git+https://github.com/crumblingstatue/libalpacka.git#129db6827b50aa126ac1c831eb5115059eb0c516"
+source = "git+https://github.com/crumblingstatue/libalpacka.git#4b599348cc6c1fa9298ac2f05b3f15519a993b56"
 dependencies = [
  "flate2",
  "smol_str 0.3.2",

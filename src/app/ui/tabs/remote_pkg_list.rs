@@ -5,8 +5,7 @@ use {
             Packages,
             ui::{SharedUiState, cmd::Cmd},
         },
-        packages::{PkgIdx, PkgRef, SyncDbIdx},
-        util::PkgId,
+        packages::{DbIdx, PkgIdx, PkgRef},
     },
     alpacka::{Pkg, PkgDesc},
     eframe::egui,
@@ -54,10 +53,9 @@ pub fn ui(
                     ui.horizontal(|ui| {
                         let db_name = &pac.dbs[db_idx.to_usize()].name;
                         if ui.link(format!("{db_name}/{}", pkg.desc.name)).clicked() {
-                            ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
-                                db_name,
-                                pkg.desc.name.as_str(),
-                            )));
+                            ui_state
+                                .cmd
+                                .push(Cmd::OpenPkgTab(PkgRef::from_components(db_idx, idx)));
                         }
                         installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, &pac.dbs[0].pkgs);
                     });
@@ -90,7 +88,7 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
                         .pkgs
                         .iter()
                         .enumerate()
-                        .map(move |(idx, pkg)| (SyncDbIdx::from_usize(db_idx), idx, pkg))
+                        .map(move |(idx, pkg)| (DbIdx::from_usize(db_idx), idx, pkg))
                 })
                 .filter_map(|(db, idx, pkg)| {
                     let filt_lo = tab_state.query.string.to_ascii_lowercase();
@@ -124,20 +122,21 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
     ui.add_space(4.0);
 }
 
-pub fn remote_local_cmp<'p>(
+pub fn remote_local_cmp(
     remote: &PkgDesc,
-    local_pkg_list: &'p [Pkg],
-) -> Option<(&'p Pkg, RemoteLocalCmp)> {
+    local_pkg_list: &[Pkg],
+) -> Option<(PkgIdx, RemoteLocalCmp)> {
     local_pkg_list
         .iter()
-        .find(|pkg2| pkg2.desc.name == remote.name)
-        .map(|local_pkg| {
+        .enumerate()
+        .find(|(_idx, pkg2)| pkg2.desc.name == remote.name)
+        .map(|(local_idx, local_pkg)| {
             let cmp = match remote.version.cmp(&local_pkg.desc.version) {
                 std::cmp::Ordering::Less => RemoteLocalCmp::Older,
                 std::cmp::Ordering::Equal => RemoteLocalCmp::Same,
                 std::cmp::Ordering::Greater => RemoteLocalCmp::Newer,
             };
-            (local_pkg, cmp)
+            (PkgIdx::from_usize(local_idx), cmp)
         })
 }
 
@@ -153,7 +152,8 @@ pub fn installed_label_for_remote_pkg(
     remote: &PkgDesc,
     local_pkg_list: &[Pkg],
 ) {
-    if let Some((local_pkg, cmp)) = remote_local_cmp(remote, local_pkg_list) {
+    if let Some((local_idx, cmp)) = remote_local_cmp(remote, local_pkg_list) {
+        let local_pkg = &local_pkg_list[local_idx.to_usize()];
         let re = match cmp {
             RemoteLocalCmp::Older => ui
                 .add(
@@ -201,9 +201,7 @@ pub fn installed_label_for_remote_pkg(
             ui.output_mut(|out| out.cursor_icon = egui::CursorIcon::PointingHand);
         }
         if re.clicked() {
-            ui_state
-                .cmd
-                .push(Cmd::OpenPkgTab(PkgId::local(local_pkg.desc.name.as_str())));
+            ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(local_idx)));
         }
     }
 }

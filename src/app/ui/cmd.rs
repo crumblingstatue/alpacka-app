@@ -1,6 +1,6 @@
 use {
     super::{Tab, tabs::package::PkgTab},
-    crate::{app::AlpackaApp, util::PkgId},
+    crate::{app::AlpackaApp, packages::PkgRef},
     eframe::egui,
     egui_dock::{Node, NodeIndex, TabIndex},
 };
@@ -17,7 +17,7 @@ impl CmdBuf {
 }
 
 pub enum Cmd {
-    OpenPkgTab(PkgId),
+    OpenPkgTab(PkgRef),
 }
 
 pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {

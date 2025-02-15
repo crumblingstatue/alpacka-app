@@ -5,23 +5,24 @@ use {
             Packages,
             ui::{SharedUiState, cmd::Cmd},
         },
-        util::{PkgId, deduped_files},
+        packages::{Db, DbIdx, PkgIdx, PkgRef},
+        util::deduped_files,
     },
-    alpacka::{Pkg, dep::PkgDepsExt},
+    alpacka::Pkg,
     eframe::egui,
     humansize::format_size_i,
     std::process::Command,
 };
 
 pub struct PkgTab {
-    pub id: PkgId,
+    pub id: PkgRef,
     tab: PkgTabTab,
     pub force_close: bool,
     files_filt_string: String,
 }
 
 impl PkgTab {
-    pub fn new(id: PkgId) -> Self {
+    pub fn new(id: PkgRef) -> Self {
         Self {
             id,
             tab: PkgTabTab::default(),
@@ -46,28 +47,7 @@ pub fn ui(ui: &mut egui::Ui, pac: &Packages, ui_state: &mut SharedUiState, pkg_t
     }) {
         pkg_tab.force_close = true;
     }
-    let remote = pkg_tab.id.is_remote();
-    if remote {
-        pkg_ui(
-            ui,
-            ui_state,
-            pkg_tab,
-            pac.dbs
-                .iter()
-                .flat_map(|db| db.pkgs.iter().map(|pkg| (pkg, db.name.as_str()))),
-            &pac.dbs[0].pkgs,
-            remote,
-        );
-    } else {
-        pkg_ui(
-            ui,
-            ui_state,
-            pkg_tab,
-            pac.dbs[0].pkgs.iter().map(|pkg| (pkg, "local")),
-            &pac.dbs[0].pkgs,
-            remote,
-        );
-    }
+    pkg_ui(ui, ui_state, pkg_tab, &pac.dbs);
 }
 
 fn db_name_is_arch(name: &str) -> bool {
@@ -83,28 +63,22 @@ fn db_name_is_arch(name: &str) -> bool {
     .any(|repo| name == repo)
 }
 
-fn pkg_ui<'a, I>(
-    ui: &mut egui::Ui,
-    ui_state: &mut SharedUiState,
-    pkg_tab: &mut PkgTab,
-    pkg_list: I,
-    local_list: &[Pkg],
-    remote: bool,
-) where
-    I: IntoIterator<Item = (&'a Pkg, &'a str)> + Clone,
-{
-    match pkg_list
-        .clone()
-        .into_iter()
-        .find(|(pkg, db_name)| pkg_tab.id.matches_pkg(&pkg.desc, db_name))
-    {
-        Some((pkg, db_name)) => {
+fn pkg_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab, dbs: &[Db]) {
+    let (db_id, pkg_id) = pkg_tab.id.into_components();
+    let Some(db) = dbs.get(db_id.to_usize()) else {
+        ui.label("Unresolved database");
+        return;
+    };
+    let db_name = &db.name;
+    let remote = pkg_tab.id.is_remote();
+    match db.pkgs.get(pkg_id.to_usize()) {
+        Some(pkg) => {
             ui.horizontal(|ui| {
                 ui.label(format!("{db_name}/"));
                 ui.heading(pkg.desc.name.as_str());
                 ui.label(pkg.desc.version.as_str());
                 if remote {
-                    installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, local_list);
+                    installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, &dbs[0].pkgs);
                 }
             });
             ui.separator();
@@ -115,7 +89,7 @@ fn pkg_ui<'a, I>(
             ui.separator();
             match pkg_tab.tab {
                 PkgTabTab::General => {
-                    general_tab_ui(ui, ui_state, pkg_tab, pkg_list, local_list, pkg, db_name);
+                    general_tab_ui(ui, ui_state, dbs, pkg, db_name);
                 }
                 PkgTabTab::Files => files_tab_ui(ui, ui_state, pkg_tab, pkg),
             }
@@ -143,17 +117,13 @@ fn files_tab_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut P
     }
 }
 
-fn general_tab_ui<'a, I>(
+fn general_tab_ui(
     ui: &mut egui::Ui,
     ui_state: &mut SharedUiState,
-    pkg_tab: &mut PkgTab,
-    pkg_list: I,
-    local_list: &[Pkg],
+    dbs: &[Db],
     pkg: &Pkg,
     db_name: &str,
-) where
-    I: IntoIterator<Item = (&'a Pkg, &'a str)> + Clone,
-{
+) {
     ui.label(pkg.desc.desc.as_deref().unwrap_or("<no description>"));
     if let Some(url) = pkg.desc.url.as_deref() {
         ui.horizontal(|ui| {
@@ -181,28 +151,37 @@ fn general_tab_ui<'a, I>(
         "Installed size: {}",
         format_size_i(pkg.desc.size, humansize::BINARY)
     ));
-    deps_ui(ui, ui_state, pkg_tab, &pkg_list, pkg);
-    opt_deps_ui(ui, ui_state, pkg_tab, local_list, pkg);
-    let reqs: Vec<_> = pkg
-        .required_by(pkg_list.clone().into_iter().map(|(pkg, _)| pkg))
-        .collect();
+    deps_ui(ui, ui_state, dbs, pkg);
+    opt_deps_ui(ui, ui_state, &dbs[0].pkgs, pkg);
+    required_by_ui(ui, ui_state, pkg, dbs);
+    optional_for_ui(ui, ui_state, pkg, dbs);
+    provides_ui(ui, pkg);
+}
+
+fn required_by_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, dbs: &[Db]) {
+    let mut reqs = Vec::new();
+    for (db_i, db) in dbs.iter().enumerate() {
+        for (pkg_i, pkg2) in db.pkgs.iter().enumerate() {
+            if alpacka::dep::pkg_matches_dep(&pkg.desc, &pkg2.desc) {
+                reqs.push((
+                    PkgRef::from_components(DbIdx::from_usize(db_i), PkgIdx::from_usize(pkg_i)),
+                    pkg2,
+                ));
+            }
+        }
+    }
     ui.heading(format!("Required by ({})", reqs.len()));
     if reqs.is_empty() {
         ui.label("<none>");
     } else {
         ui.horizontal_wrapped(|ui| {
-            for req in reqs {
+            for (ref_, req) in reqs {
                 if ui.link(req.desc.name.as_str()).clicked() {
-                    ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
-                        &pkg_tab.id.db,
-                        req.desc.name.as_str(),
-                    )));
+                    ui_state.cmd.push(Cmd::OpenPkgTab(ref_));
                 }
             }
         });
     }
-    optional_for_ui(ui, ui_state, pkg_tab, pkg_list, pkg);
-    provides_ui(ui, pkg);
 }
 
 fn provides_ui(ui: &mut egui::Ui, pkg: &Pkg) {
@@ -213,42 +192,45 @@ fn provides_ui(ui: &mut egui::Ui, pkg: &Pkg) {
     }
 }
 
-fn optional_for_ui<'a, I>(
-    ui: &mut egui::Ui,
-    ui_state: &mut SharedUiState,
-    pkg_tab: &mut PkgTab,
-    pkg_list: I,
-    pkg: &Pkg,
-) where
-    I: IntoIterator<Item = (&'a Pkg, &'a str)> + Clone,
-{
-    let opt_for: Vec<_> = pkg
-        .optional_for(pkg_list.into_iter().map(|(pkg, _)| pkg))
-        .collect();
+fn optional_for_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, dbs: &[Db]) {
+    let opt_for = pkgs_that_optionally_depend_on(pkg, dbs);
     ui.heading(format!("Optional for ({})", opt_for.len()));
     if opt_for.is_empty() {
         ui.label("<none>");
     } else {
         ui.horizontal_wrapped(|ui| {
-            for pkg in opt_for {
+            for (ref_, pkg) in opt_for {
                 if ui.link(pkg.desc.name.as_str()).clicked() {
-                    ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
-                        &pkg_tab.id.db,
-                        pkg.desc.name.as_str(),
-                    )));
+                    ui_state.cmd.push(Cmd::OpenPkgTab(ref_));
                 }
             }
         });
     }
 }
 
-fn opt_deps_ui(
-    ui: &mut egui::Ui,
-    ui_state: &mut SharedUiState,
-    pkg_tab: &mut PkgTab,
-    local_list: &[Pkg],
-    pkg: &Pkg,
-) {
+fn pkgs_that_optionally_depend_on<'db>(
+    dependency: &Pkg,
+    dbs: &'db [Db],
+) -> Vec<(PkgRef, &'db Pkg)> {
+    let mut pkgs = Vec::new();
+    for (db_i, db) in dbs.iter().enumerate() {
+        for (pkg_i, pkg) in db.pkgs.iter().enumerate() {
+            if pkg_optionally_depends_on(pkg, dependency) {
+                pkgs.push((
+                    PkgRef::from_components(DbIdx::from_usize(db_i), PkgIdx::from_usize(pkg_i)),
+                    pkg,
+                ));
+            }
+        }
+    }
+    pkgs
+}
+
+fn pkg_optionally_depends_on(pkg: &Pkg, dependency: &Pkg) -> bool {
+    alpacka::dep::pkg_matches_opt_dep(&dependency.desc, &pkg.desc)
+}
+
+fn opt_deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, local_list: &[Pkg], pkg: &Pkg) {
     let opt_deps = &pkg.desc.opt_depends;
     ui.heading(format!("Optional dependencies ({})", opt_deps.len()));
     if opt_deps.is_empty() {
@@ -256,15 +238,12 @@ fn opt_deps_ui(
     } else {
         for opt_dep in opt_deps {
             ui.horizontal(|ui| {
-                let installed = local_list
-                    .iter()
-                    .any(|pkg| pkg.desc.name == opt_dep.dep.name);
-                if installed {
+                let installed = local_list.iter().enumerate().find_map(|(i, pkg)| {
+                    (pkg.desc.name == opt_dep.dep.name).then_some(PkgIdx::from_usize(i))
+                });
+                if let Some(ref_) = installed {
                     if ui.link(opt_dep.dep.name.as_str()).clicked() {
-                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
-                            &pkg_tab.id.db,
-                            opt_dep.dep.name.as_str(),
-                        )));
+                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(ref_)));
 
                         if let Some(ver) = opt_dep.dep.ver.as_ref().map(|v| v.ver.as_str()) {
                             ui.label(format!("={ver}"));
@@ -276,7 +255,7 @@ fn opt_deps_ui(
                 if let Some(desc) = &opt_dep.reason {
                     ui.label(desc.as_str());
                 }
-                if installed {
+                if installed.is_some() {
                     ui.label("[installed]");
                 }
             });
@@ -284,15 +263,7 @@ fn opt_deps_ui(
     }
 }
 
-fn deps_ui<'a, I>(
-    ui: &mut egui::Ui,
-    ui_state: &mut SharedUiState,
-    pkg_tab: &mut PkgTab,
-    pkg_list: &I,
-    pkg: &Pkg,
-) where
-    I: IntoIterator<Item = (&'a Pkg, &'a str)> + Clone,
-{
+fn deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, dbs: &[Db], pkg: &Pkg) {
     let deps = &pkg.desc.depends;
     ui.heading(format!("Dependencies ({})", deps.len()));
     if deps.is_empty() {
@@ -300,27 +271,15 @@ fn deps_ui<'a, I>(
     } else {
         ui.horizontal_wrapped(|ui| {
             for dep in deps {
-                let resolved = pkg_list.clone().into_iter().find(|(pkg, _db_name)| {
-                    pkg.desc.name == dep.name
-                        || pkg.desc.provides.iter().any(|dep2| {
-                            // TODO: This might not be correct/enough
-                            dep2.name == dep.name
-                                && dep2.ver.as_ref().map(|v| &v.ver)
-                                    >= dep.ver.as_ref().map(|v| &v.ver)
-                        })
-                });
-                match resolved {
-                    Some((pkg, _db_name)) => {
+                match resolve_dep(dep, dbs) {
+                    Some((ref_, pkg)) => {
                         let label = if dep.name == pkg.desc.name {
                             dep.name.as_str()
                         } else {
                             &format!("{} ({})", dep.name, pkg.desc.name)
                         };
                         if ui.link(label).clicked() {
-                            ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
-                                &pkg_tab.id.db,
-                                pkg.desc.name.as_str(),
-                            )));
+                            ui_state.cmd.push(Cmd::OpenPkgTab(ref_));
                         }
                     }
                     None => {
@@ -330,4 +289,24 @@ fn deps_ui<'a, I>(
             }
         });
     }
+}
+
+fn resolve_dep<'db>(dep: &alpacka::Depend, dbs: &'db [Db]) -> Option<(PkgRef, &'db Pkg)> {
+    for (db_i, db) in dbs.iter().enumerate() {
+        for (pkg_i, pkg) in db.pkgs.iter().enumerate() {
+            if pkg.desc.name == dep.name
+                || pkg.desc.provides.iter().any(|dep2| {
+                    // TODO: This might not be correct/enough
+                    dep2.name == dep.name
+                        && dep2.ver.as_ref().map(|v| &v.ver) >= dep.ver.as_ref().map(|v| &v.ver)
+                })
+            {
+                return Some((
+                    PkgRef::from_components(DbIdx::from_usize(db_i), PkgIdx::from_usize(pkg_i)),
+                    pkg,
+                ));
+            }
+        }
+    }
+    None
 }

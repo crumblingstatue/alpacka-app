@@ -5,8 +5,7 @@ use {
             Packages,
             ui::{SharedUiState, cmd::Cmd},
         },
-        packages::PkgIdx,
-        util::PkgId,
+        packages::{PkgIdx, PkgRef},
     },
     eframe::egui,
     egui_extras::{Column, TableBuilder},
@@ -71,9 +70,7 @@ pub fn ui(
                 let pkg = &pac.dbs[0].pkgs[idx.to_usize()];
                 row.col(|ui| {
                     if ui.link(pkg.desc.name.as_str()).clicked() {
-                        ui_state
-                            .cmd
-                            .push(Cmd::OpenPkgTab(PkgId::local(pkg.desc.name.as_str())));
+                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(idx)));
                     }
                 });
                 row.col(|ui| {

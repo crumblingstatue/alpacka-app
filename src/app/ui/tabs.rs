@@ -36,7 +36,7 @@ impl TabViewer for TabViewState<'_, '_> {
                     .sum::<usize>()
             )
             .into(),
-            Tab::Pkg(pkg) => format!("📦 {}", pkg.id).into(),
+            Tab::Pkg(pkg) => format!("📦 {}", pkg.id.display(&self.pac.dbs)).into(),
             Tab::ColorTheme => "🎨 Color theme".into(),
         }
     }

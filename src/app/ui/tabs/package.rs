@@ -115,171 +115,181 @@ fn pkg_ui<'a, I>(
             ui.separator();
             match pkg_tab.tab {
                 PkgTabTab::General => {
-                    ui.label(pkg.desc.desc.as_deref().unwrap_or("<no description>"));
-                    if let Some(url) = pkg.desc.url.as_deref() {
-                        ui.horizontal(|ui| {
-                            ui.label("Upstream URL");
-                            ui.hyperlink(url);
-                        });
-                    }
-                    if db_name_is_arch(db_name) {
-                        ui.horizontal(|ui| {
-                            ui.label("Arch package URL");
-                            ui.hyperlink(format!(
-                                "https://archlinux.org/packages/{db_name}/{}/{}",
-                                pkg.desc.arch, pkg.desc.name
-                            ));
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("Package Source URL");
-                            ui.hyperlink(format!(
-                                "https://gitlab.archlinux.org/archlinux/packaging/packages/{}",
-                                pkg.desc.name
-                            ));
-                        });
-                    }
-                    ui.label(format!(
-                        "Installed size: {}",
-                        format_size_i(pkg.desc.size, humansize::BINARY)
-                    ));
-                    let deps = &pkg.desc.depends;
-                    ui.heading(format!("Dependencies ({})", deps.len()));
-                    if deps.is_empty() {
-                        ui.label("<none>");
-                    } else {
-                        ui.horizontal_wrapped(|ui| {
-                            for dep in deps {
-                                let resolved =
-                                    pkg_list.clone().into_iter().find(|(pkg, _db_name)| {
-                                        pkg.desc.name == dep.name
-                                            || pkg.desc.provides.iter().any(|dep2| {
-                                                // TODO: This might not be correct/enough
-                                                dep2.name == dep.name
-                                                    && dep2.ver.as_ref().map(|v| &v.ver)
-                                                        >= dep.ver.as_ref().map(|v| &v.ver)
-                                            })
-                                    });
-                                match resolved {
-                                    Some((pkg, _db_name)) => {
-                                        let label = if dep.name == pkg.desc.name {
-                                            dep.name.as_str()
-                                        } else {
-                                            &format!("{} ({})", dep.name, pkg.desc.name)
-                                        };
-                                        if ui.link(label).clicked() {
-                                            ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
-                                                &pkg_tab.id.db,
-                                                pkg.desc.name.as_str(),
-                                            )));
-                                        }
-                                    }
-                                    None => {
-                                        ui.label(format!("{} (unresolved)", dep.name));
-                                    }
-                                }
-                            }
-                        });
-                    }
-                    let opt_deps = &pkg.desc.opt_depends;
-                    ui.heading(format!("Optional dependencies ({})", opt_deps.len()));
-                    if opt_deps.is_empty() {
-                        ui.label("<none>");
-                    } else {
-                        for opt_dep in opt_deps {
-                            ui.horizontal(|ui| {
-                                let installed = local_list
-                                    .iter()
-                                    .any(|pkg| pkg.desc.name == opt_dep.dep.name);
-                                if installed {
-                                    if ui.link(opt_dep.dep.name.as_str()).clicked() {
-                                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
-                                            &pkg_tab.id.db,
-                                            opt_dep.dep.name.as_str(),
-                                        )));
-
-                                        if let Some(ver) =
-                                            opt_dep.dep.ver.as_ref().map(|v| v.ver.as_str())
-                                        {
-                                            ui.label(format!("={ver}"));
-                                        }
-                                    }
-                                } else {
-                                    ui.label(opt_dep.dep.name.as_str());
-                                }
-                                if let Some(desc) = &opt_dep.reason {
-                                    ui.label(desc.as_str());
-                                }
-                                if installed {
-                                    ui.label("[installed]");
-                                }
-                            });
-                        }
-                    }
-                    let reqs: Vec<_> = pkg
-                        .required_by(pkg_list.clone().into_iter().map(|(pkg, _)| pkg))
-                        .collect();
-                    ui.heading(format!("Required by ({})", reqs.len()));
-                    if reqs.is_empty() {
-                        ui.label("<none>");
-                    } else {
-                        ui.horizontal_wrapped(|ui| {
-                            for req in reqs {
-                                if ui.link(req.desc.name.as_str()).clicked() {
-                                    ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
-                                        &pkg_tab.id.db,
-                                        req.desc.name.as_str(),
-                                    )));
-                                }
-                            }
-                        });
-                    }
-                    let opt_for: Vec<_> = pkg
-                        .optional_for(pkg_list.into_iter().map(|(pkg, _)| pkg))
-                        .collect();
-                    ui.heading(format!("Optional for ({})", opt_for.len()));
-                    if opt_for.is_empty() {
-                        ui.label("<none>");
-                    } else {
-                        ui.horizontal_wrapped(|ui| {
-                            for pkg in opt_for {
-                                if ui.link(pkg.desc.name.as_str()).clicked() {
-                                    ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
-                                        &pkg_tab.id.db,
-                                        pkg.desc.name.as_str(),
-                                    )));
-                                }
-                            }
-                        });
-                    }
-                    let provides = &pkg.desc.provides;
-                    ui.heading(format!("Provides ({})", provides.len()));
-                    for dep in provides {
-                        ui.label(dep.name.as_str());
-                    }
+                    general_tab_ui(ui, ui_state, pkg_tab, pkg_list, local_list, pkg, db_name);
                 }
-                PkgTabTab::Files => {
-                    ui.add(
-                        egui::TextEdit::singleline(&mut pkg_tab.files_filt_string)
-                            .hint_text("🔍 Filter"),
-                    );
-                    let files = &pkg.files;
-                    let deduped_files = deduped_files(files).filter(|file| {
-                        file.to_ascii_lowercase()
-                            .contains(&pkg_tab.files_filt_string.to_ascii_lowercase())
-                    });
-                    for file in deduped_files {
-                        let name = format!("/{file}");
-                        if ui.link(&name).clicked() {
-                            if let Err(e) = Command::new("xdg-open").arg(name).status() {
-                                ui_state.error_popup = Some(e.to_string());
-                            }
-                        }
-                    }
-                }
+                PkgTabTab::Files => files_tab_ui(ui, ui_state, pkg_tab, pkg),
             }
         }
         None => {
             ui.label("<Unresolved package>");
         }
+    }
+}
+
+fn files_tab_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab, pkg: &Pkg) {
+    ui.add(egui::TextEdit::singleline(&mut pkg_tab.files_filt_string).hint_text("🔍 Filter"));
+    let files = &pkg.files;
+    let deduped_files = deduped_files(files).filter(|file| {
+        file.to_ascii_lowercase()
+            .contains(&pkg_tab.files_filt_string.to_ascii_lowercase())
+    });
+    for file in deduped_files {
+        let name = format!("/{file}");
+        if ui.link(&name).clicked() {
+            if let Err(e) = Command::new("xdg-open").arg(name).status() {
+                ui_state.error_popup = Some(e.to_string());
+            }
+        }
+    }
+}
+
+fn general_tab_ui<'a, I>(
+    ui: &mut egui::Ui,
+    ui_state: &mut SharedUiState,
+    pkg_tab: &mut PkgTab,
+    pkg_list: I,
+    local_list: &[Pkg],
+    pkg: &Pkg,
+    db_name: &str,
+) where
+    I: IntoIterator<Item = (&'a Pkg, &'a str)> + Clone,
+{
+    ui.label(pkg.desc.desc.as_deref().unwrap_or("<no description>"));
+    if let Some(url) = pkg.desc.url.as_deref() {
+        ui.horizontal(|ui| {
+            ui.label("Upstream URL");
+            ui.hyperlink(url);
+        });
+    }
+    if db_name_is_arch(db_name) {
+        ui.horizontal(|ui| {
+            ui.label("Arch package URL");
+            ui.hyperlink(format!(
+                "https://archlinux.org/packages/{db_name}/{}/{}",
+                pkg.desc.arch, pkg.desc.name
+            ));
+        });
+        ui.horizontal(|ui| {
+            ui.label("Package Source URL");
+            ui.hyperlink(format!(
+                "https://gitlab.archlinux.org/archlinux/packaging/packages/{}",
+                pkg.desc.name
+            ));
+        });
+    }
+    ui.label(format!(
+        "Installed size: {}",
+        format_size_i(pkg.desc.size, humansize::BINARY)
+    ));
+    let deps = &pkg.desc.depends;
+    ui.heading(format!("Dependencies ({})", deps.len()));
+    if deps.is_empty() {
+        ui.label("<none>");
+    } else {
+        ui.horizontal_wrapped(|ui| {
+            for dep in deps {
+                let resolved = pkg_list.clone().into_iter().find(|(pkg, _db_name)| {
+                    pkg.desc.name == dep.name
+                        || pkg.desc.provides.iter().any(|dep2| {
+                            // TODO: This might not be correct/enough
+                            dep2.name == dep.name
+                                && dep2.ver.as_ref().map(|v| &v.ver)
+                                    >= dep.ver.as_ref().map(|v| &v.ver)
+                        })
+                });
+                match resolved {
+                    Some((pkg, _db_name)) => {
+                        let label = if dep.name == pkg.desc.name {
+                            dep.name.as_str()
+                        } else {
+                            &format!("{} ({})", dep.name, pkg.desc.name)
+                        };
+                        if ui.link(label).clicked() {
+                            ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
+                                &pkg_tab.id.db,
+                                pkg.desc.name.as_str(),
+                            )));
+                        }
+                    }
+                    None => {
+                        ui.label(format!("{} (unresolved)", dep.name));
+                    }
+                }
+            }
+        });
+    }
+    let opt_deps = &pkg.desc.opt_depends;
+    ui.heading(format!("Optional dependencies ({})", opt_deps.len()));
+    if opt_deps.is_empty() {
+        ui.label("<none>");
+    } else {
+        for opt_dep in opt_deps {
+            ui.horizontal(|ui| {
+                let installed = local_list
+                    .iter()
+                    .any(|pkg| pkg.desc.name == opt_dep.dep.name);
+                if installed {
+                    if ui.link(opt_dep.dep.name.as_str()).clicked() {
+                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
+                            &pkg_tab.id.db,
+                            opt_dep.dep.name.as_str(),
+                        )));
+
+                        if let Some(ver) = opt_dep.dep.ver.as_ref().map(|v| v.ver.as_str()) {
+                            ui.label(format!("={ver}"));
+                        }
+                    }
+                } else {
+                    ui.label(opt_dep.dep.name.as_str());
+                }
+                if let Some(desc) = &opt_dep.reason {
+                    ui.label(desc.as_str());
+                }
+                if installed {
+                    ui.label("[installed]");
+                }
+            });
+        }
+    }
+    let reqs: Vec<_> = pkg
+        .required_by(pkg_list.clone().into_iter().map(|(pkg, _)| pkg))
+        .collect();
+    ui.heading(format!("Required by ({})", reqs.len()));
+    if reqs.is_empty() {
+        ui.label("<none>");
+    } else {
+        ui.horizontal_wrapped(|ui| {
+            for req in reqs {
+                if ui.link(req.desc.name.as_str()).clicked() {
+                    ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
+                        &pkg_tab.id.db,
+                        req.desc.name.as_str(),
+                    )));
+                }
+            }
+        });
+    }
+    let opt_for: Vec<_> = pkg
+        .optional_for(pkg_list.into_iter().map(|(pkg, _)| pkg))
+        .collect();
+    ui.heading(format!("Optional for ({})", opt_for.len()));
+    if opt_for.is_empty() {
+        ui.label("<none>");
+    } else {
+        ui.horizontal_wrapped(|ui| {
+            for pkg in opt_for {
+                if ui.link(pkg.desc.name.as_str()).clicked() {
+                    ui_state.cmd.push(Cmd::OpenPkgTab(PkgId::qualified(
+                        &pkg_tab.id.db,
+                        pkg.desc.name.as_str(),
+                    )));
+                }
+            }
+        });
+    }
+    let provides = &pkg.desc.provides;
+    ui.heading(format!("Provides ({})", provides.len()));
+    for dep in provides {
+        ui.label(dep.name.as_str());
     }
 }

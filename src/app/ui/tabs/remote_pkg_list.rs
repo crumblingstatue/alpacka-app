@@ -87,14 +87,13 @@ pub fn ui(
             let list = &pac.alpacka_filt_remote_pkg_list;
             body.rows(22.0, list.len(), |mut row| {
                 let (db_name, idx) = &list[row.index()];
-                let Some(pkg) = &pac
-                    .alpacka_syncdbs
-                    .iter()
-                    .find(|db| &db.name == db_name)
-                    .unwrap()
-                    .pkgs
-                    .get(*idx)
-                else {
+                let Some(db) = &pac.alpacka_syncdbs.iter().find(|db| &db.name == db_name) else {
+                    row.col(|ui| {
+                        ui.label(format!("<Error: can't find db '{db_name}'>"));
+                    });
+                    return;
+                };
+                let Some(pkg) = db.pkgs.get(*idx) else {
                     row.col(|ui| {
                         ui.label(format!("<Error: invalid index: {idx}>"));
                     });

@@ -102,6 +102,7 @@ impl eframe::App for AlpackaApp {
         ui::top_panel_ui(self, ctx);
         ui::central_panel_ui(self, ctx);
         ui::cmd::process_cmds(self, ctx);
+        ui::modals(self, ctx);
     }
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.sync_to_config();

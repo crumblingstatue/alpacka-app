@@ -150,6 +150,53 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                 });
             });
         });
+}
+
+pub fn central_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
+    DockArea::new(&mut app.ui.dock_state)
+        .show_leaf_collapse_buttons(false)
+        .show_leaf_close_all_buttons(false)
+        .show(
+            ctx,
+            &mut TabViewState {
+                pac: &mut app.pac,
+                ui: &mut app.ui.shared,
+            },
+        );
+}
+
+fn spawn_pacman_sy(pac_handler: &mut Option<PacChildHandler>) -> anyhow::Result<()> {
+    let mut child = Command::new("pkexec")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .args(["pacman", "-Sy"])
+        .spawn()?;
+    let (send, recv) = std::sync::mpsc::channel();
+    *pac_handler = Some(PacChildHandler::new(recv));
+    let reader = BufReader::new(child.stdout.take().context("Missing child stdout")?);
+    let err_reader = BufReader::new(child.stderr.take().context("Missing child stderr")?);
+    let send2 = send.clone();
+    std::thread::spawn(move || {
+        for line in reader.lines() {
+            if let Err(e) = send.send(PacmanChildEvent::Line(line)) {
+                eprintln!("Send error: {e}");
+            }
+        }
+        if let Err(e) = send.send(PacmanChildEvent::Exit(child.wait())) {
+            eprintln!("Send error: {e}");
+        }
+    });
+    std::thread::spawn(move || {
+        for line in err_reader.lines() {
+            if let Err(e) = send2.send(PacmanChildEvent::Line(line)) {
+                eprintln!("Send error: {e}");
+            }
+        }
+    });
+    Ok(())
+}
+
+pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
     let mut close_handler = false;
     if let Some(handler) = &mut app.ui.shared.pac_handler {
         if let Err(e) = handler.handle_messages() {
@@ -203,48 +250,4 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
             app.ui.shared.error_popup = None;
         }
     }
-}
-
-pub fn central_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
-    DockArea::new(&mut app.ui.dock_state)
-        .show_leaf_collapse_buttons(false)
-        .show_leaf_close_all_buttons(false)
-        .show(
-            ctx,
-            &mut TabViewState {
-                pac: &mut app.pac,
-                ui: &mut app.ui.shared,
-            },
-        );
-}
-
-fn spawn_pacman_sy(pac_handler: &mut Option<PacChildHandler>) -> anyhow::Result<()> {
-    let mut child = Command::new("pkexec")
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .args(["pacman", "-Sy"])
-        .spawn()?;
-    let (send, recv) = std::sync::mpsc::channel();
-    *pac_handler = Some(PacChildHandler::new(recv));
-    let reader = BufReader::new(child.stdout.take().context("Missing child stdout")?);
-    let err_reader = BufReader::new(child.stderr.take().context("Missing child stderr")?);
-    let send2 = send.clone();
-    std::thread::spawn(move || {
-        for line in reader.lines() {
-            if let Err(e) = send.send(PacmanChildEvent::Line(line)) {
-                eprintln!("Send error: {e}");
-            }
-        }
-        if let Err(e) = send.send(PacmanChildEvent::Exit(child.wait())) {
-            eprintln!("Send error: {e}");
-        }
-    });
-    std::thread::spawn(move || {
-        for line in err_reader.lines() {
-            if let Err(e) = send2.send(PacmanChildEvent::Line(line)) {
-                eprintln!("Send error: {e}");
-            }
-        }
-    });
-    Ok(())
 }

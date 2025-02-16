@@ -1,6 +1,11 @@
 #![forbid(unsafe_code)]
 #![feature(let_chains, array_windows)]
-#![warn(clippy::pedantic, clippy::unwrap_used, unused_qualifications)]
+#![warn(
+    clippy::pedantic,
+    clippy::unwrap_used,
+    clippy::use_self,
+    unused_qualifications
+)]
 
 use {app::AlpackaApp, eframe::NativeOptions};
 

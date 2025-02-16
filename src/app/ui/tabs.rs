@@ -73,10 +73,10 @@ pub enum Tab {
     ColorTheme,
 }
 impl Tab {
-    pub(crate) fn default_tabs() -> Vec<Tab> {
+    pub(crate) fn default_tabs() -> Vec<Self> {
         vec![
-            Tab::LocalPkgList(PkgListState::default()),
-            Tab::RemotePkgList(PkgListState::default()),
+            Self::LocalPkgList(PkgListState::default()),
+            Self::RemotePkgList(PkgListState::default()),
         ]
     }
 }

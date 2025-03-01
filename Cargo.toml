@@ -17,3 +17,4 @@ serde.version = "1"
 serde.features = ["derive"]
 smol_str = "0.3.2"
 alpacka.git = "https://github.com/crumblingstatue/libalpacka.git"
+proc-chan.git = "https://github.com/crumblingstatue/proc-chan.git"

@@ -152,6 +152,7 @@ dependencies = [
  "egui_dock",
  "egui_extras",
  "humansize",
+ "proc-chan",
  "ron",
  "serde",
  "smol_str 0.3.2",
@@ -2362,6 +2363,11 @@ checksum = "77957b295656769bb8ad2b6a6b09d897d94f05c41b069aede1fcdaa675eaea04"
 dependencies = [
  "zerocopy",
 ]
+
+[[package]]
+name = "proc-chan"
+version = "0.1.0"
+source = "git+https://github.com/crumblingstatue/proc-chan.git#73bdb3afa385f7b09d8550b70151e3709d5b9d27"
 
 [[package]]
 name = "proc-macro-crate"

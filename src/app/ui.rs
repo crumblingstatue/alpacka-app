@@ -1,13 +1,11 @@
 use {
     super::{AlpackaApp, Packages},
-    anyhow::Context as _,
     cmd::CmdBuf,
     eframe::egui,
     egui_colors::Colorix,
     egui_dock::{DockArea, DockState},
     std::{
-        io::{BufRead, BufReader},
-        process::{Command, ExitStatus, Stdio},
+        process::{Command, ExitStatus},
         sync::mpsc::TryRecvError,
     },
     tabs::{Tab, TabViewState},
@@ -39,21 +37,14 @@ impl Default for UiState {
     }
 }
 
-pub enum PacmanChildEvent {
-    Line(std::io::Result<String>),
-    Exit(std::io::Result<ExitStatus>),
-}
-
-type PacEventRecv = std::sync::mpsc::Receiver<PacmanChildEvent>;
-
 pub struct PacChildHandler {
-    recv: Option<PacEventRecv>,
+    recv: Option<proc_chan::EventRecv>,
     exit_status: Option<ExitStatus>,
     out_buf: String,
 }
 
 impl PacChildHandler {
-    pub fn new(recv: PacEventRecv) -> Self {
+    pub fn new(recv: proc_chan::EventRecv) -> Self {
         Self {
             recv: Some(recv),
             exit_status: None,
@@ -64,12 +55,15 @@ impl PacChildHandler {
         if let Some(recv) = self.recv.as_mut() {
             match recv.try_recv() {
                 Ok(ev) => match ev {
-                    PacmanChildEvent::Line(result) => {
-                        self.out_buf.push_str(&result?);
-                        self.out_buf.push('\n');
+                    proc_chan::Event::StdoutRead(result) => {
+                        self.out_buf.push_str(std::str::from_utf8(&result?)?);
                     }
-                    PacmanChildEvent::Exit(exit_status) => {
+                    proc_chan::Event::StderrRead(result) => {
+                        eprintln!("TODO: pacman stderr: {result:?}");
+                    }
+                    proc_chan::Event::Exit(exit_status) => {
                         self.exit_status = Some(exit_status?);
+                        self.recv = None;
                     }
                 },
                 Err(TryRecvError::Empty) => {}
@@ -166,33 +160,10 @@ pub fn central_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
 }
 
 fn spawn_pacman_sy(pac_handler: &mut Option<PacChildHandler>) -> anyhow::Result<()> {
-    let mut child = Command::new("pkexec")
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .args(["pacman", "-Sy"])
-        .spawn()?;
-    let (send, recv) = std::sync::mpsc::channel();
+    let mut command = Command::new("pkexec");
+    command.args(["pacman", "-Sy"]);
+    let recv = proc_chan::spawn(command, None)?;
     *pac_handler = Some(PacChildHandler::new(recv));
-    let reader = BufReader::new(child.stdout.take().context("Missing child stdout")?);
-    let err_reader = BufReader::new(child.stderr.take().context("Missing child stderr")?);
-    let send2 = send.clone();
-    std::thread::spawn(move || {
-        for line in reader.lines() {
-            if let Err(e) = send.send(PacmanChildEvent::Line(line)) {
-                eprintln!("Send error: {e}");
-            }
-        }
-        if let Err(e) = send.send(PacmanChildEvent::Exit(child.wait())) {
-            eprintln!("Send error: {e}");
-        }
-    });
-    std::thread::spawn(move || {
-        for line in err_reader.lines() {
-            if let Err(e) = send2.send(PacmanChildEvent::Line(line)) {
-                eprintln!("Send error: {e}");
-            }
-        }
-    });
     Ok(())
 }
 

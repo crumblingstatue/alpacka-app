@@ -83,7 +83,7 @@ pub fn ui(
         });
 }
 
-pub fn pkg_list_table_builder(ui: &mut egui::Ui) -> TableBuilder {
+pub fn pkg_list_table_builder(ui: &'_ mut egui::Ui) -> TableBuilder<'_> {
     TableBuilder::new(ui)
         .column(Column::auto())
         .column(Column::auto())

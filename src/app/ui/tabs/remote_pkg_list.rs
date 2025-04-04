@@ -93,14 +93,14 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
                 .filter_map(|(db, idx, pkg)| {
                     let filt_lo = tab_state.query.string.to_ascii_lowercase();
                     let mut flags = tab_state.query.flags;
-                    if flags.installed || flags.newer || flags.older {
-                        if let Some((_, cmp)) = remote_local_cmp(&pkg.desc, &pac.dbs[0].pkgs) {
-                            flags.installed = false;
-                            match cmp {
-                                RemoteLocalCmp::Newer => flags.newer = false,
-                                RemoteLocalCmp::Same => {}
-                                RemoteLocalCmp::Older => flags.older = false,
-                            }
+                    if (flags.installed || flags.newer || flags.older)
+                        && let Some((_, cmp)) = remote_local_cmp(&pkg.desc, &pac.dbs[0].pkgs)
+                    {
+                        flags.installed = false;
+                        match cmp {
+                            RemoteLocalCmp::Newer => flags.newer = false,
+                            RemoteLocalCmp::Same => {}
+                            RemoteLocalCmp::Older => flags.older = false,
                         }
                     }
                     if flags.any() {
@@ -131,19 +131,29 @@ pub fn remote_local_cmp(
         .enumerate()
         .find(|(_idx, pkg2)| pkg2.desc.name == remote.name)
         .map(|(local_idx, local_pkg)| {
-            let cmp = match remote.version.cmp(&local_pkg.desc.version) {
-                std::cmp::Ordering::Less => RemoteLocalCmp::Older,
-                std::cmp::Ordering::Equal => RemoteLocalCmp::Same,
-                std::cmp::Ordering::Greater => RemoteLocalCmp::Newer,
-            };
+            let cmp = pkg_ver_cmp(remote, local_pkg);
             (PkgIdx::from_usize(local_idx), cmp)
         })
+}
+
+pub fn pkg_ver_cmp(remote: &PkgDesc, local_pkg: &Pkg) -> RemoteLocalCmp {
+    match remote.version.cmp(&local_pkg.desc.version) {
+        std::cmp::Ordering::Less => RemoteLocalCmp::Older,
+        std::cmp::Ordering::Equal => RemoteLocalCmp::Same,
+        std::cmp::Ordering::Greater => RemoteLocalCmp::Newer,
+    }
 }
 
 pub enum RemoteLocalCmp {
     Newer,
     Same,
     Older,
+}
+
+impl RemoteLocalCmp {
+    pub fn is_newer(&self) -> bool {
+        matches!(self, Self::Newer)
+    }
 }
 
 pub fn installed_label_for_remote_pkg(

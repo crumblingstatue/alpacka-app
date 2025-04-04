@@ -8,7 +8,7 @@ use {
         process::{Command, ExitStatus},
         sync::mpsc::TryRecvError,
     },
-    tabs::{Tab, TabViewState},
+    tabs::{Tab, TabViewState, upgrade_list},
 };
 
 pub mod cmd;
@@ -91,7 +91,15 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                         ui.close_menu();
                         if let Err(e) = spawn_pacman_sy(&mut app.ui.shared.pac_handler) {
                             app.ui.shared.error_popup = Some(e.to_string());
+                        } else {
+                            app.open_upgrade_window = true;
                         }
+                    }
+                    if ui.button("Upgrade list").clicked() {
+                        ui.close_menu();
+                        app.ui
+                            .dock_state
+                            .push_to_focused_leaf(Tab::UpgradeList(upgrade_list::State::default()));
                     }
                     if ui.button("⟳ Refresh package list").clicked() {
                         ui.close_menu();
@@ -123,8 +131,15 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                 });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     match app.pac_recv.try_recv() {
-                        Ok(pac) => match pac {
-                            Ok(pac) => app.pac = pac,
+                        Ok(result) => match result {
+                            Ok(pkgs) => {
+                                app.pkgs = pkgs;
+                                if app.open_upgrade_window {
+                                    app.ui.dock_state.push_to_focused_leaf(Tab::UpgradeList(
+                                        upgrade_list::State::default(),
+                                    ));
+                                }
+                            }
                             Err(e) => {
                                 eprintln!("Failed to load pacma dbs: {e}");
                             }
@@ -153,7 +168,7 @@ pub fn central_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
         .show(
             ctx,
             &mut TabViewState {
-                pac: &mut app.pac,
+                pac: &mut app.pkgs,
                 ui: &mut app.ui.shared,
             },
         );

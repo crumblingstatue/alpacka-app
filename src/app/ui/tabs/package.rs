@@ -109,10 +109,10 @@ fn files_tab_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut P
     });
     for file in deduped_files {
         let name = format!("/{file}");
-        if ui.link(&name).clicked() {
-            if let Err(e) = Command::new("xdg-open").arg(name).status() {
-                ui_state.error_popup = Some(e.to_string());
-            }
+        if ui.link(&name).clicked()
+            && let Err(e) = Command::new("xdg-open").arg(name).status()
+        {
+            ui_state.error_popup = Some(e.to_string());
         }
     }
 }

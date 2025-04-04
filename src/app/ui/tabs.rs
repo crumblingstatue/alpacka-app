@@ -10,6 +10,7 @@ mod color_theme;
 pub mod local_pkg_list;
 pub mod package;
 pub mod remote_pkg_list;
+pub mod upgrade_list;
 
 pub struct TabViewState<'pac, 'ui> {
     pub pac: &'pac mut Packages,
@@ -36,6 +37,7 @@ impl TabViewer for TabViewState<'_, '_> {
                     .sum::<usize>()
             )
             .into(),
+            Tab::UpgradeList(_) => "Upgrade list".into(),
             Tab::Pkg(pkg) => format!("📦 {}", pkg.id.display(&self.pac.dbs)).into(),
             Tab::ColorTheme => "🎨 Color theme".into(),
         }
@@ -45,6 +47,7 @@ impl TabViewer for TabViewState<'_, '_> {
         match tab {
             Tab::LocalPkgList(state) => local_pkg_list::ui(ui, self.pac, self.ui, state),
             Tab::RemotePkgList(state) => remote_pkg_list::ui(ui, self.pac, self.ui, state),
+            Tab::UpgradeList(state) => upgrade_list::ui(ui, self.pac, self.ui, state),
             Tab::Pkg(tab) => package::ui(ui, self.pac, self.ui, tab),
             Tab::ColorTheme => color_theme::ui(ui, &mut self.ui.colorix),
         }
@@ -61,6 +64,7 @@ impl TabViewer for TabViewState<'_, '_> {
     fn force_close(&mut self, tab: &mut Self::Tab) -> bool {
         match tab {
             Tab::LocalPkgList(_) | Tab::RemotePkgList(_) | Tab::ColorTheme => false,
+            Tab::UpgradeList(state) => state.force_close,
             Tab::Pkg(pkg_tab) => pkg_tab.force_close,
         }
     }
@@ -69,6 +73,7 @@ impl TabViewer for TabViewState<'_, '_> {
 pub enum Tab {
     LocalPkgList(PkgListState),
     RemotePkgList(PkgListState),
+    UpgradeList(upgrade_list::State),
     Pkg(PkgTab),
     ColorTheme,
 }

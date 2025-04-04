@@ -7,19 +7,21 @@ use {
 };
 
 pub struct AlpackaApp {
-    pac: Packages,
+    pkgs: Packages,
     ui: UiState,
     cfg: Config,
     pac_recv: std::sync::mpsc::Receiver<anyhow::Result<Packages>>,
+    open_upgrade_window: bool,
 }
 
 impl AlpackaApp {
     pub fn new() -> Self {
         Self {
-            pac: Packages::default(),
+            pkgs: Packages::default(),
             ui: UiState::default(),
             cfg: Config::load_or_default(),
             pac_recv: Packages::new_spawned(),
+            open_upgrade_window: false,
         }
     }
     pub fn sync_from_config(&mut self, egui_ctx: &eframe::egui::Context) {

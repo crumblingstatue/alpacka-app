@@ -14,6 +14,7 @@ mod config;
 mod packages;
 mod query_syntax;
 mod util;
+mod vercmp;
 
 fn main() {
     let mut app = AlpackaApp::new();

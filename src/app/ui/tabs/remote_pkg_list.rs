@@ -137,16 +137,20 @@ pub fn remote_local_cmp(
 }
 
 pub fn pkg_ver_cmp(remote: &PkgDesc, local_pkg: &Pkg) -> RemoteLocalCmp {
-    match remote.version.cmp(&local_pkg.desc.version) {
-        std::cmp::Ordering::Less => RemoteLocalCmp::Older,
-        std::cmp::Ordering::Equal => RemoteLocalCmp::Same,
-        std::cmp::Ordering::Greater => RemoteLocalCmp::Newer,
+    match crate::vercmp::vercmp(&remote.version, &local_pkg.desc.version) {
+        crate::vercmp::AbCmp::ANewer => RemoteLocalCmp::Newer,
+        crate::vercmp::AbCmp::Same => RemoteLocalCmp::Same,
+        crate::vercmp::AbCmp::BNewer => RemoteLocalCmp::Older,
     }
 }
 
+#[derive(PartialEq, Eq, Debug)]
 pub enum RemoteLocalCmp {
+    /// Remote is newer
     Newer,
+    /// They are the same version
     Same,
+    /// Remote is older
     Older,
 }
 

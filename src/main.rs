@@ -5,6 +5,7 @@
     clippy::unwrap_used,
     clippy::use_self,
     clippy::indexing_slicing,
+    clippy::suboptimal_flops,
     unused_qualifications
 )]
 

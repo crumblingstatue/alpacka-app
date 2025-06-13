@@ -6,16 +6,16 @@ use {
 pub fn draw_logo(painter: &egui::Painter, center: egui::Pos2, radius: f32) {
     // Draw a pacman shape
     let start_angle = PI + FRAC_PI_4;
-    let end_angle = 3.0 * PI - FRAC_PI_4;
+    let end_angle = 3.0f32.mul_add(PI, -FRAC_PI_4);
 
     let mut points = vec![center];
     let num_points: u8 = 16;
     for i in 0..=num_points {
         let t = f32::from(i) / f32::from(num_points);
-        let angle = start_angle + t * (end_angle - start_angle);
+        let angle = t.mul_add(end_angle - start_angle, start_angle);
         points.push(egui::pos2(
-            center.x + radius * angle.cos(),
-            center.y + radius * angle.sin(),
+            radius.mul_add(angle.cos(), center.x),
+            radius.mul_add(angle.sin(), center.y),
         ));
     }
     points.push(center);

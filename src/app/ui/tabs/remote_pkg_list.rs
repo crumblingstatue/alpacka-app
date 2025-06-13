@@ -37,8 +37,13 @@ pub fn ui(
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
             let list = &pkgs.filt_remote_pkgs;
             body.rows(22.0, list.len(), |mut row| {
-                let pkg_ref = list[row.index()];
-                let (db, pkg) = dbs.resolve(pkg_ref);
+                let Some(pkg_ref) = list.get(row.index()) else {
+                    row.col(|ui| {
+                        ui.label("<Unresolved pkgref>");
+                    });
+                    return;
+                };
+                let (db, pkg) = dbs.resolve(*pkg_ref);
                 let Some(db) = db else {
                     row.col(|ui| {
                         ui.label("<Unresolved db>");
@@ -55,9 +60,9 @@ pub fn ui(
                     ui.horizontal(|ui| {
                         let db_name = &db.name;
                         if ui.link(format!("{db_name}/{}", pkg.desc.name)).clicked() {
-                            ui_state.cmd.push(Cmd::OpenPkgTab(pkg_ref));
+                            ui_state.cmd.push(Cmd::OpenPkgTab(*pkg_ref));
                         }
-                        installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, dbs.local_pkgs());
+                        installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, dbs);
                     });
                 });
                 row.col(|ui| {
@@ -164,10 +169,13 @@ pub fn installed_label_for_remote_pkg(
     ui: &mut egui::Ui,
     ui_state: &mut SharedUiState,
     remote: &PkgDesc,
-    local_pkg_list: &[Pkg],
+    dbs: &Dbs,
 ) {
-    if let Some((local_idx, cmp)) = remote_local_cmp(remote, local_pkg_list) {
-        let local_pkg = &local_pkg_list[local_idx.to_usize()];
+    if let Some((local_idx, cmp)) = remote_local_cmp(remote, dbs.local_pkgs()) {
+        let Some(local_pkg) = dbs.resolve_local(local_idx) else {
+            ui.label("[unresolved]");
+            return;
+        };
         let re = match cmp {
             RemoteLocalCmp::Older => ui
                 .add(

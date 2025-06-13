@@ -66,11 +66,21 @@ pub fn ui(
         .body(|mut body| {
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
             body.rows(22.0, pkgs.filt_local_pkgs.len(), |mut row| {
-                let idx = pkgs.filt_local_pkgs[row.index()];
-                let pkg = &dbs.local_pkgs()[idx.to_usize()];
+                let Some(idx) = pkgs.filt_local_pkgs.get(row.index()) else {
+                    row.col(|ui| {
+                        ui.label("<Unresolved package index>");
+                    });
+                    return;
+                };
+                let Some(pkg) = dbs.resolve_local(*idx) else {
+                    row.col(|ui| {
+                        ui.label("<Unresolved package>");
+                    });
+                    return;
+                };
                 row.col(|ui| {
                     if ui.link(pkg.desc.name.as_str()).clicked() {
-                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(idx)));
+                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(*idx)));
                     }
                 });
                 row.col(|ui| {

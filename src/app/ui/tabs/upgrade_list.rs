@@ -21,6 +21,7 @@ struct Upgrade {
     remote: PkgRef,
 }
 
+#[expect(clippy::too_many_lines)]
 pub fn ui(
     ui: &mut egui::Ui,
     pkgs: &mut PkgCache,
@@ -91,11 +92,25 @@ pub fn ui(
         .body(|mut body| {
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
             body.rows(22.0, tab_state.upgrade_list.len(), |mut row| {
-                let upg = &tab_state.upgrade_list[row.index()];
+                let Some(upg) = &tab_state.upgrade_list.get(row.index()) else {
+                    row.col(|ui| {
+                        ui.label("<unresolved upgrade>");
+                    });
+                    return;
+                };
                 let idx = upg.local;
-                let local = &dbs.local_pkgs()[idx.to_usize()];
-                let (rem_db, rem_pkg) = upg.remote.into_components();
-                let remote = &dbs.inner[rem_db.to_usize()].pkgs[rem_pkg.to_usize()];
+                let Some(local) = dbs.resolve_local(idx) else {
+                    row.col(|ui| {
+                        ui.label("<unresolved package>");
+                    });
+                    return;
+                };
+                let (_, Some(remote)) = dbs.resolve(upg.remote) else {
+                    row.col(|ui| {
+                        ui.label("<unresolved remote>");
+                    });
+                    return;
+                };
                 row.col(|ui| {
                     if ui.link(local.desc.name.as_str()).clicked() {
                         ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(idx)));

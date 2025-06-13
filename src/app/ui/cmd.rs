@@ -1,6 +1,9 @@
 use {
     super::{Tab, tabs::package::PkgTab},
-    crate::{app::AlpackaApp, packages::PkgRef},
+    crate::{
+        app::{AlpackaApp, ui::spawn_pacman_cmd_root_pkexec},
+        packages::PkgRef,
+    },
     eframe::egui,
     egui_dock::{Node, NodeIndex, TabIndex},
 };
@@ -18,6 +21,7 @@ impl CmdBuf {
 
 pub enum Cmd {
     OpenPkgTab(PkgRef),
+    Rscn(smol_str::SmolStr),
 }
 
 pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {
@@ -61,6 +65,14 @@ pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {
                             .dock_state
                             .push_to_first_leaf(Tab::Pkg(PkgTab::new(id)));
                     }
+                }
+            }
+            Cmd::Rscn(pkg_name) => {
+                if let Err(e) = spawn_pacman_cmd_root_pkexec(
+                    &mut app.ui.shared.pac_handler,
+                    &["-Rscn", pkg_name.as_str()],
+                ) {
+                    app.ui.shared.error_popup = Some(e.to_string());
                 }
             }
         }

@@ -79,7 +79,14 @@ pub fn ui(
                     return;
                 };
                 row.col(|ui| {
-                    if ui.link(pkg.desc.name.as_str()).clicked() {
+                    let re = ui.link(pkg.desc.name.as_str());
+                    re.context_menu(|ui| {
+                        if ui.button("Remove (-Rscn)").clicked() {
+                            ui.close_menu();
+                            ui_state.cmd.push(Cmd::Rscn(pkg.desc.name.clone()));
+                        }
+                    });
+                    if re.clicked() {
                         ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(*idx)));
                     }
                 });

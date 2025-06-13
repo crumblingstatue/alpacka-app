@@ -4,6 +4,7 @@
     clippy::pedantic,
     clippy::unwrap_used,
     clippy::use_self,
+    clippy::indexing_slicing,
     unused_qualifications
 )]
 

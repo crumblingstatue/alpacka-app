@@ -129,6 +129,13 @@ fn pacman_vercmp_tests() {
     assert_eq!(vercmp("1:1.1", "1.1"), AbCmp::ANewer);
 }
 
+#[test]
+fn test_rpm_vercmp_odd() {
+    assert_eq!(vercmp("", ""), AbCmp::Same);
+    assert_eq!(vercmp(" ", ""), AbCmp::ANewer);
+    assert_eq!(vercmp("", " "), AbCmp::BNewer);
+}
+
 /// RPM-style version comparison for two version segments
 fn rpm_vercmp(a: &[u8], b: &[u8]) -> AbCmp {
     if a == b {

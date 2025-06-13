@@ -53,23 +53,23 @@ impl PkgRef {
     pub const fn into_components(self) -> (DbIdx, PkgIdx) {
         (DbIdx((self.0 >> 24) as u8), PkgIdx(self.0 & 0xFF_FFFF))
     }
-    pub fn display(self, dbs: &[Db]) -> impl std::fmt::Display {
-        struct Disp<'db>(DbIdx, PkgIdx, &'db [Db]);
+    pub fn display(self, dbs: &Dbs) -> impl std::fmt::Display {
+        struct Disp<'db>(PkgRef, &'db Dbs);
         impl std::fmt::Display for Disp<'_> {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                let Some(db) = self.2.get(self.0.to_usize()) else {
-                    return writeln!(f, "Unresolved db ({:?})", self.0);
+                let (db, pkg) = self.1.resolve(self.0);
+                let Some(db) = db else {
+                    return writeln!(f, "Unresolved db");
                 };
                 let db_name = &db.name;
-                let Some(pkg) = db.pkgs.get(self.1.to_usize()) else {
-                    return writeln!(f, "unresolved package idx ({:?})", self.1);
+                let Some(pkg) = pkg else {
+                    return writeln!(f, "unresolved package idx");
                 };
                 let pkg_name = &pkg.desc.name;
                 write!(f, "{db_name}/{pkg_name}")
             }
         }
-        let (db, pkg) = self.into_components();
-        Disp(db, pkg, dbs)
+        Disp(self, dbs)
     }
     pub fn is_local(self) -> bool {
         let (db, _) = self.into_components();
@@ -106,7 +106,7 @@ pub struct PkgCache {
 
 pub struct Dbs {
     /// Invariant: dbs[0] is present, and it's the local db
-    pub inner: Vec<Db>,
+    inner: Vec<Db>,
 }
 
 impl Dbs {
@@ -123,6 +123,20 @@ impl Dbs {
         // Invariant: self.dbs[0] is the local db
         #[expect(clippy::indexing_slicing)]
         &self.inner[0].pkgs
+    }
+    pub fn all(&self) -> impl Iterator<Item = (DbIdx, &Db)> {
+        self.inner
+            .iter()
+            .enumerate()
+            .map(|(i, db)| (DbIdx::from_usize(i), db))
+    }
+    pub fn remotes(&self) -> impl Iterator<Item = (DbIdx, &Db)> {
+        self.all().skip(1)
+    }
+    pub fn local_and_syncs(&self) -> (&Db, &[Db]) {
+        // Invariant: self.dbs[0] is the local db
+        #[expect(clippy::unwrap_used)]
+        self.inner.split_first().unwrap()
     }
 }
 

@@ -5,7 +5,7 @@ use {
             SharedUiState,
             cmd::{Cmd, CmdBuf},
         },
-        packages::{Db, DbIdx, Dbs, PkgIdx, PkgRef},
+        packages::{DbIdx, Dbs, PkgIdx, PkgRef},
         util::deduped_files,
     },
     alpacka::Pkg,
@@ -179,9 +179,9 @@ fn required_by_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs, pkg
 fn calc_required_by<'db>(pkg: &Pkg, dbs: &'db Dbs, local_only: bool) -> Vec<(PkgRef, &'db Pkg)> {
     let mut reqs = Vec::new();
     if local_only {
-        calc_required_by_inner(pkg, &mut reqs, 0, dbs.local_pkgs());
+        calc_required_by_inner(pkg, &mut reqs, DbIdx::LOCAL, dbs.local_pkgs());
     } else {
-        for (db_i, db) in dbs.inner.iter().enumerate() {
+        for (db_i, db) in dbs.all() {
             calc_required_by_inner(pkg, &mut reqs, db_i, &db.pkgs);
         }
     }
@@ -191,13 +191,13 @@ fn calc_required_by<'db>(pkg: &Pkg, dbs: &'db Dbs, local_only: bool) -> Vec<(Pkg
 fn calc_required_by_inner<'db>(
     pkg: &Pkg,
     reqs: &mut Vec<(PkgRef, &'db Pkg)>,
-    db_i: usize,
+    db_i: DbIdx,
     pkgs: &'db [Pkg],
 ) {
     for (pkg_i, pkg2) in pkgs.iter().enumerate() {
         if alpacka::dep::pkg_matches_dep(&pkg.desc, &pkg2.desc) {
             reqs.push((
-                PkgRef::from_components(DbIdx::from_usize(db_i), PkgIdx::from_usize(pkg_i)),
+                PkgRef::from_components(db_i, PkgIdx::from_usize(pkg_i)),
                 pkg2,
             ));
         }
@@ -213,7 +213,7 @@ fn provides_ui(ui: &mut egui::Ui, pkg: &Pkg) {
 }
 
 fn optional_for_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs) {
-    let opt_for = pkgs_that_optionally_depend_on(pkg, &dbs.inner);
+    let opt_for = pkgs_that_optionally_depend_on(pkg, dbs);
     ui.heading(format!("Optional for ({})", opt_for.len()));
     if opt_for.is_empty() {
         ui.label("<none>");
@@ -228,16 +228,13 @@ fn optional_for_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs) {
     }
 }
 
-fn pkgs_that_optionally_depend_on<'db>(
-    dependency: &Pkg,
-    dbs: &'db [Db],
-) -> Vec<(PkgRef, &'db Pkg)> {
+fn pkgs_that_optionally_depend_on<'db>(dependency: &Pkg, dbs: &'db Dbs) -> Vec<(PkgRef, &'db Pkg)> {
     let mut pkgs = Vec::new();
-    for (db_i, db) in dbs.iter().enumerate() {
+    for (db_i, db) in dbs.all() {
         for (pkg_i, pkg) in db.pkgs.iter().enumerate() {
             if pkg_optionally_depends_on(pkg, dependency) {
                 pkgs.push((
-                    PkgRef::from_components(DbIdx::from_usize(db_i), PkgIdx::from_usize(pkg_i)),
+                    PkgRef::from_components(db_i, PkgIdx::from_usize(pkg_i)),
                     pkg,
                 ));
             }
@@ -291,7 +288,7 @@ fn deps_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, dbs: &Dbs, pkg: &Pkg) {
     } else {
         ui.horizontal_wrapped(|ui| {
             for dep in deps {
-                match resolve_dep(dep, &dbs.inner) {
+                match resolve_dep(dep, dbs) {
                     Some((ref_, pkg)) => {
                         let label = if dep.name == pkg.desc.name {
                             dep.name.as_str()
@@ -311,8 +308,8 @@ fn deps_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, dbs: &Dbs, pkg: &Pkg) {
     }
 }
 
-fn resolve_dep<'db>(dep: &alpacka::Depend, dbs: &'db [Db]) -> Option<(PkgRef, &'db Pkg)> {
-    for (db_i, db) in dbs.iter().enumerate() {
+fn resolve_dep<'db>(dep: &alpacka::Depend, dbs: &'db Dbs) -> Option<(PkgRef, &'db Pkg)> {
+    for (db_i, db) in dbs.all() {
         for (pkg_i, pkg) in db.pkgs.iter().enumerate() {
             if pkg.desc.name == dep.name
                 || pkg.desc.provides.iter().any(|dep2| {
@@ -322,7 +319,7 @@ fn resolve_dep<'db>(dep: &alpacka::Depend, dbs: &'db [Db]) -> Option<(PkgRef, &'
                 })
             {
                 return Some((
-                    PkgRef::from_components(DbIdx::from_usize(db_i), PkgIdx::from_usize(pkg_i)),
+                    PkgRef::from_components(db_i, PkgIdx::from_usize(pkg_i)),
                     pkg,
                 ));
             }

@@ -5,7 +5,7 @@ use {
             PkgCache,
             ui::{SharedUiState, cmd::Cmd},
         },
-        packages::{DbIdx, Dbs, PkgIdx, PkgRef},
+        packages::{Dbs, PkgIdx, PkgRef},
     },
     alpacka::{Pkg, PkgDesc},
     eframe::egui,
@@ -84,16 +84,13 @@ fn top_panel_ui(pkgs: &mut PkgCache, dbs: &Dbs, tab_state: &mut PkgListState, ui
         if re.changed() {
             tab_state.query = PkgListQuery::compile(&tab_state.query_src);
             pkgs.filt_remote_pkgs = dbs
-                .inner
-                .iter()
-                .enumerate()
-                .skip(1)
+                .remotes()
                 .flat_map(|(db_idx, syncdb)| {
                     syncdb
                         .pkgs
                         .iter()
                         .enumerate()
-                        .map(move |(idx, pkg)| (DbIdx::from_usize(db_idx), idx, pkg))
+                        .map(move |(idx, pkg)| (db_idx, idx, pkg))
                 })
                 .filter_map(|(db, idx, pkg)| {
                     let filt_lo = tab_state.query.string.to_ascii_lowercase();

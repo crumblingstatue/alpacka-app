@@ -195,21 +195,20 @@ fn ver_layout_job(local: &alpacka::Pkg, remote: &alpacka::Pkg) -> egui::text::La
 
 fn determine_upgrades(dbs: &Dbs) -> Vec<Upgrade> {
     let mut out = Vec::new();
-    if let Some((localdb, syncs)) = dbs.inner.split_first() {
-        for (li, local) in localdb.pkgs.iter().enumerate() {
-            for (di, syncdb) in syncs.iter().enumerate() {
-                for (ri, remote) in syncdb.pkgs.iter().enumerate() {
-                    if local.desc.name == remote.desc.name
-                        && pkg_ver_cmp(&remote.desc, local).is_newer()
-                    {
-                        out.push(Upgrade {
-                            local: PkgIdx::from_usize(li),
-                            remote: PkgRef::from_components(
-                                DbIdx::from_usize(di + 1),
-                                PkgIdx::from_usize(ri),
-                            ),
-                        });
-                    }
+    let (localdb, syncs) = dbs.local_and_syncs();
+    for (li, local) in localdb.pkgs.iter().enumerate() {
+        for (di, syncdb) in syncs.iter().enumerate() {
+            for (ri, remote) in syncdb.pkgs.iter().enumerate() {
+                if local.desc.name == remote.desc.name
+                    && pkg_ver_cmp(&remote.desc, local).is_newer()
+                {
+                    out.push(Upgrade {
+                        local: PkgIdx::from_usize(li),
+                        remote: PkgRef::from_components(
+                            DbIdx::from_usize(di + 1),
+                            PkgIdx::from_usize(ri),
+                        ),
+                    });
                 }
             }
         }

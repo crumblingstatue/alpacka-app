@@ -26,22 +26,14 @@ impl TabViewer for TabViewState<'_, '_, '_> {
             return "<dbs not loaded>".into();
         };
         match tab {
-            Tab::LocalPkgList(_) => format!(
-                "Local packages ({})",
-                dbs.inner.first().map_or(0, |db| db.pkgs.len())
-            )
-            .into(),
+            Tab::LocalPkgList(_) => format!("Local packages ({})", dbs.local_pkgs().len(),).into(),
             Tab::RemotePkgList(_) => format!(
                 "Remote packages ({})",
-                dbs.inner
-                    .iter()
-                    .skip(1)
-                    .map(|db| db.pkgs.len())
-                    .sum::<usize>()
+                dbs.remotes().map(|(_, db)| db.pkgs.len()).sum::<usize>()
             )
             .into(),
             Tab::UpgradeList(_) => "Upgrade list".into(),
-            Tab::Pkg(pkg) => format!("📦 {}", pkg.id.display(&dbs.inner)).into(),
+            Tab::Pkg(pkg) => format!("📦 {}", pkg.id.display(dbs)).into(),
             Tab::ColorTheme => "🎨 Color theme".into(),
         }
     }

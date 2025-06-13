@@ -9,10 +9,10 @@ impl PkgIdx {
     ///
     /// It's expected that the usize doesn't exceed `u32::MAX` (there won't be billions of packages).
     #[expect(clippy::cast_possible_truncation)]
-    pub fn from_usize(idx: usize) -> Self {
+    pub const fn from_usize(idx: usize) -> Self {
         Self(idx as u32)
     }
-    pub fn to_usize(self) -> usize {
+    pub const fn to_usize(self) -> usize {
         self.0 as usize
     }
 }
@@ -28,7 +28,7 @@ impl DbIdx {
     ///
     /// It's expected that the usize doesn't exceed `u8::MAX` (there won't be hundreds of sync dbs).
     #[expect(clippy::cast_possible_truncation)]
-    pub fn from_usize(idx: usize) -> Self {
+    pub const fn from_usize(idx: usize) -> Self {
         Self(idx as u8)
     }
     pub fn to_usize(self) -> usize {
@@ -50,7 +50,7 @@ impl PkgRef {
     pub fn local(pkg: PkgIdx) -> Self {
         Self::from_components(DbIdx::LOCAL, pkg)
     }
-    pub fn into_components(self) -> (DbIdx, PkgIdx) {
+    pub const fn into_components(self) -> (DbIdx, PkgIdx) {
         (DbIdx((self.0 >> 24) as u8), PkgIdx(self.0 & 0xFF_FFFF))
     }
     pub fn display(self, dbs: &[Db]) -> impl std::fmt::Display {

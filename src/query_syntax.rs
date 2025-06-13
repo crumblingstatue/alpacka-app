@@ -37,7 +37,7 @@ pub struct QueryFlags {
 }
 
 impl QueryFlags {
-    pub fn any(self) -> bool {
+    pub const fn any(self) -> bool {
         self.installed || self.newer || self.older
     }
 }

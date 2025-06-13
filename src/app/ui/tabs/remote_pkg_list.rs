@@ -160,7 +160,7 @@ pub enum RemoteLocalCmp {
 }
 
 impl RemoteLocalCmp {
-    pub fn is_newer(&self) -> bool {
+    pub const fn is_newer(&self) -> bool {
         matches!(self, Self::Newer)
     }
 }

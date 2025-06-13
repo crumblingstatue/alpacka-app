@@ -6,6 +6,7 @@
     clippy::use_self,
     clippy::indexing_slicing,
     clippy::suboptimal_flops,
+    clippy::missing_const_for_fn,
     unused_qualifications
 )]
 

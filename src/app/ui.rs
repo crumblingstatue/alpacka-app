@@ -54,7 +54,9 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                 ui.menu_button("⟳ Sync", |ui| {
                     if ui.button("🔁 Sync databases (pacman -Sy)").clicked() {
                         ui.close_menu();
-                        if let Err(e) = spawn_pacman_cmd(&mut app.ui.shared.pac_handler, &["-Sy"]) {
+                        if let Err(e) =
+                            spawn_pacman_cmd_root_pkexec(&mut app.ui.shared.pac_handler, &["-Sy"])
+                        {
                             app.ui.shared.error_popup = Some(e.to_string());
                         } else {
                             app.open_upgrade_window = true;
@@ -189,7 +191,7 @@ impl PacChildHandler {
     }
 }
 
-fn spawn_pacman_cmd(
+fn spawn_pacman_cmd_root_pkexec(
     pac_handler: &mut Option<PacChildHandler>,
     args: &[&str],
 ) -> anyhow::Result<()> {

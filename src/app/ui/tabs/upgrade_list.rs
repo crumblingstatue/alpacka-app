@@ -1,7 +1,7 @@
 use {
     super::{PkgListState, local_pkg_list::pkg_list_table_builder, remote_pkg_list::pkg_ver_cmp},
     crate::{
-        app::ui::{SharedUiState, cmd::Cmd, spawn_pacman_cmd},
+        app::ui::{SharedUiState, cmd::Cmd, spawn_pacman_cmd_root_pkexec},
         packages::{DbIdx, Packages, PkgIdx, PkgRef},
         query_syntax::PkgListQuery,
     },
@@ -69,7 +69,7 @@ pub fn ui(
                     egui::Button::new("pacman -Su"),
                 )
                 .clicked()
-                && let Err(e) = spawn_pacman_cmd(&mut ui_state.pac_handler, &["-Su"])
+                && let Err(e) = spawn_pacman_cmd_root_pkexec(&mut ui_state.pac_handler, &["-Su"])
             {
                 ui_state.error_popup = Some(e.to_string());
             }

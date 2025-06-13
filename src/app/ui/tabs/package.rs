@@ -77,7 +77,7 @@ fn pkg_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab,
         ui.heading(pkg.desc.name.as_str());
         ui.label(pkg.desc.version.as_str());
         if remote {
-            installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, &dbs.local().pkgs);
+            installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, dbs.local_pkgs());
         }
     });
     ui.separator();
@@ -144,7 +144,7 @@ fn general_tab_ui(
         format_size_i(pkg.desc.size, humansize::BINARY)
     ));
     deps_ui(ui, ui_state, dbs, pkg);
-    opt_deps_ui(ui, ui_state, &dbs.local().pkgs, pkg);
+    opt_deps_ui(ui, ui_state, dbs.local_pkgs(), pkg);
     required_by_ui(ui, ui_state, pkg, dbs);
     optional_for_ui(ui, ui_state, pkg, dbs);
     provides_ui(ui, pkg);

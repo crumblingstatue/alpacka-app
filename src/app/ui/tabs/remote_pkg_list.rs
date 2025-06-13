@@ -57,7 +57,7 @@ pub fn ui(
                         if ui.link(format!("{db_name}/{}", pkg.desc.name)).clicked() {
                             ui_state.cmd.push(Cmd::OpenPkgTab(pkg_ref));
                         }
-                        installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, &dbs.local().pkgs);
+                        installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, dbs.local_pkgs());
                     });
                 });
                 row.col(|ui| {
@@ -94,7 +94,7 @@ fn top_panel_ui(pkgs: &mut PkgCache, dbs: &Dbs, tab_state: &mut PkgListState, ui
                     let filt_lo = tab_state.query.string.to_ascii_lowercase();
                     let mut flags = tab_state.query.flags;
                     if (flags.installed || flags.newer || flags.older)
-                        && let Some((_, cmp)) = remote_local_cmp(&pkg.desc, &dbs.local().pkgs)
+                        && let Some((_, cmp)) = remote_local_cmp(&pkg.desc, dbs.local_pkgs())
                     {
                         flags.installed = false;
                         match cmp {

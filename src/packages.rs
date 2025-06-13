@@ -116,10 +116,10 @@ impl Dbs {
         let pkg = db.and_then(|db| db.pkgs.get(pkg_idx.to_usize()));
         (db, pkg)
     }
-    pub fn local(&self) -> &Db {
+    pub fn local_pkgs(&self) -> &[Pkg] {
         // Invariant: self.dbs[0] is the local db
         #[expect(clippy::indexing_slicing)]
-        &self.inner[0]
+        &self.inner[0].pkgs
     }
 }
 

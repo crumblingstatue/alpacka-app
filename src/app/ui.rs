@@ -1,5 +1,5 @@
 use {
-    super::{AlpackaApp, Packages},
+    super::{AlpackaApp, PkgCache},
     ansi_term_buf::Term,
     cmd::CmdBuf,
     eframe::egui::{self, TextBuffer},
@@ -70,7 +70,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                     }
                     if ui.button("⟳ Refresh package list").clicked() {
                         ui.close_menu();
-                        app.pac_recv = Packages::new_spawned();
+                        app.pac_recv = PkgCache::new_spawned();
                     }
                 });
                 ui.menu_button("☰ Preferences", |ui| {
@@ -99,8 +99,9 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     match app.pac_recv.try_recv() {
                         Ok(result) => match result {
-                            Ok(pkgs) => {
-                                app.pkgs = Some(pkgs);
+                            Ok((pkgs, dbs)) => {
+                                app.pkgs = pkgs;
+                                app.dbs = Some(dbs);
                                 if app.open_upgrade_window {
                                     app.ui.dock_state.push_to_focused_leaf(Tab::UpgradeList(
                                         upgrade_list::State::default(),
@@ -135,7 +136,8 @@ pub fn central_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
         .show(
             ctx,
             &mut TabViewState {
-                pkgs: app.pkgs.as_mut(),
+                pkgs: &mut app.pkgs,
+                dbs: app.dbs.as_ref(),
                 ui: &mut app.ui.shared,
             },
         );
@@ -244,7 +246,7 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
                 ui.label(format!("Pacman exited ({status})"));
                 if ui.button("Close").clicked() {
                     close_handler = true;
-                    app.pac_recv = Packages::new_spawned();
+                    app.pac_recv = PkgCache::new_spawned();
                 }
             }
         });

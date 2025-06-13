@@ -98,20 +98,32 @@ pub struct Db {
     pub pkgs: Vec<Pkg>,
 }
 
-pub struct Packages {
+#[derive(Default)]
+pub struct PkgCache {
     pub filt_local_pkgs: Vec<PkgIdx>,
     pub filt_remote_pkgs: Vec<PkgRef>,
-    /// Invariant: dbs[0] is present, and it's the local db
-    pub dbs: Vec<Db>,
 }
 
-impl Packages {
-    pub fn new_spawned() -> std::sync::mpsc::Receiver<anyhow::Result<Self>> {
+pub struct Dbs {
+    /// Invariant: dbs[0] is present, and it's the local db
+    pub inner: Vec<Db>,
+}
+
+impl Dbs {
+    pub fn local(&self) -> &Db {
+        // Invariant: self.dbs[0] is the local db
+        #[expect(clippy::indexing_slicing)]
+        &self.inner[0]
+    }
+}
+
+impl PkgCache {
+    pub fn new_spawned() -> std::sync::mpsc::Receiver<anyhow::Result<(Self, Dbs)>> {
         let (send, recv) = std::sync::mpsc::channel();
         std::thread::spawn(move || send.send(Self::new()));
         recv
     }
-    fn new() -> anyhow::Result<Self> {
+    fn new() -> anyhow::Result<(Self, Dbs)> {
         let mut local_db = alpacka::read_local_db()?;
         local_db.sort_by(|a, b| a.desc.name.cmp(&b.desc.name));
         let mut syncdbs = Vec::new();
@@ -135,26 +147,23 @@ impl Packages {
                 pkgs,
             });
         }
-        Ok(Self {
-            filt_local_pkgs: (0..local_len).map(PkgIdx::from_usize).collect(),
-            filt_remote_pkgs: {
-                let mut vec = Vec::new();
-                for (db_idx, db) in syncdbs.iter().enumerate().skip(1) {
-                    for i in 0..db.pkgs.len() {
-                        vec.push(PkgRef::from_components(
-                            DbIdx::from_usize(db_idx),
-                            PkgIdx::from_usize(i),
-                        ));
+        Ok((
+            Self {
+                filt_local_pkgs: (0..local_len).map(PkgIdx::from_usize).collect(),
+                filt_remote_pkgs: {
+                    let mut vec = Vec::new();
+                    for (db_idx, db) in syncdbs.iter().enumerate().skip(1) {
+                        for i in 0..db.pkgs.len() {
+                            vec.push(PkgRef::from_components(
+                                DbIdx::from_usize(db_idx),
+                                PkgIdx::from_usize(i),
+                            ));
+                        }
                     }
-                }
-                vec
+                    vec
+                },
             },
-            dbs: syncdbs,
-        })
-    }
-    pub fn local_db(&self) -> &Db {
-        // Invariant: self.dbs[0] is the local db
-        #[expect(clippy::indexing_slicing)]
-        &self.dbs[0]
+            Dbs { inner: syncdbs },
+        ))
     }
 }

@@ -1,26 +1,31 @@
 mod ui;
 
 use {
-    crate::{config::Config, packages::Packages},
+    crate::{
+        config::Config,
+        packages::{Dbs, PkgCache},
+    },
     egui_colors::{Colorix, tokens::ThemeColor},
     ui::UiState,
 };
 
 pub struct AlpackaApp {
-    pkgs: Option<Packages>,
+    pkgs: PkgCache,
+    dbs: Option<Dbs>,
     ui: UiState,
     cfg: Config,
-    pac_recv: std::sync::mpsc::Receiver<anyhow::Result<Packages>>,
+    pac_recv: std::sync::mpsc::Receiver<anyhow::Result<(PkgCache, Dbs)>>,
     open_upgrade_window: bool,
 }
 
 impl AlpackaApp {
     pub fn new() -> Self {
         Self {
-            pkgs: None,
+            pkgs: PkgCache::default(),
+            dbs: None,
             ui: UiState::default(),
             cfg: Config::load_or_default(),
-            pac_recv: Packages::new_spawned(),
+            pac_recv: PkgCache::new_spawned(),
             open_upgrade_window: false,
         }
     }

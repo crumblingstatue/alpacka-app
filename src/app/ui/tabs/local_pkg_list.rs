@@ -2,10 +2,10 @@ use {
     super::{PkgListQuery, PkgListState},
     crate::{
         app::{
-            Packages,
+            PkgCache,
             ui::{SharedUiState, cmd::Cmd},
         },
-        packages::{PkgIdx, PkgRef},
+        packages::{Dbs, PkgIdx, PkgRef},
     },
     eframe::egui,
     egui_extras::{Column, TableBuilder},
@@ -13,7 +13,8 @@ use {
 
 pub fn ui(
     ui: &mut egui::Ui,
-    pkgs: &mut Packages,
+    pkgs: &mut PkgCache,
+    dbs: &Dbs,
     ui_state: &mut SharedUiState,
     tab_state: &mut PkgListState,
 ) {
@@ -27,7 +28,7 @@ pub fn ui(
             if re.changed() {
                 tab_state.query = PkgListQuery::compile(&tab_state.query_src);
                 pkgs.filt_local_pkgs =
-                    pkgs.local_db()
+                    dbs.local()
                         .pkgs
                         .iter()
                         .enumerate()
@@ -67,7 +68,7 @@ pub fn ui(
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
             body.rows(22.0, pkgs.filt_local_pkgs.len(), |mut row| {
                 let idx = pkgs.filt_local_pkgs[row.index()];
-                let pkg = &pkgs.local_db().pkgs[idx.to_usize()];
+                let pkg = &dbs.local().pkgs[idx.to_usize()];
                 row.col(|ui| {
                     if ui.link(pkg.desc.name.as_str()).clicked() {
                         ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(idx)));

@@ -2,7 +2,7 @@ use {
     super::{PkgListState, local_pkg_list::pkg_list_table_builder, remote_pkg_list::pkg_ver_cmp},
     crate::{
         app::ui::{SharedUiState, cmd::Cmd, spawn_pacman_cmd_root_pkexec},
-        packages::{DbIdx, Packages, PkgIdx, PkgRef},
+        packages::{DbIdx, Dbs, PkgCache, PkgIdx, PkgRef},
         query_syntax::PkgListQuery,
     },
     eframe::egui,
@@ -23,12 +23,13 @@ struct Upgrade {
 
 pub fn ui(
     ui: &mut egui::Ui,
-    pkgs: &mut Packages,
+    pkgs: &mut PkgCache,
+    dbs: &Dbs,
     ui_state: &mut SharedUiState,
     tab_state: &mut State,
 ) {
     if tab_state.just_opened {
-        tab_state.upgrade_list = determine_upgrades(pkgs);
+        tab_state.upgrade_list = determine_upgrades(dbs);
         tab_state.just_opened = false;
     }
     egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
@@ -42,7 +43,7 @@ pub fn ui(
             if re.changed() {
                 tab_state.pkg_list.query = PkgListQuery::compile(&tab_state.pkg_list.query_src);
                 pkgs.filt_local_pkgs =
-                    pkgs.local_db()
+                    dbs.local()
                         .pkgs
                         .iter()
                         .enumerate()
@@ -93,9 +94,9 @@ pub fn ui(
             body.rows(22.0, tab_state.upgrade_list.len(), |mut row| {
                 let upg = &tab_state.upgrade_list[row.index()];
                 let idx = upg.local;
-                let local = &pkgs.local_db().pkgs[idx.to_usize()];
+                let local = &dbs.local().pkgs[idx.to_usize()];
                 let (rem_db, rem_pkg) = upg.remote.into_components();
-                let remote = &pkgs.dbs[rem_db.to_usize()].pkgs[rem_pkg.to_usize()];
+                let remote = &dbs.inner[rem_db.to_usize()].pkgs[rem_pkg.to_usize()];
                 row.col(|ui| {
                     if ui.link(local.desc.name.as_str()).clicked() {
                         ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(idx)));
@@ -169,9 +170,9 @@ fn ver_layout_job(local: &alpacka::Pkg, remote: &alpacka::Pkg) -> egui::text::La
     lj
 }
 
-fn determine_upgrades(pkgs: &mut Packages) -> Vec<Upgrade> {
+fn determine_upgrades(dbs: &Dbs) -> Vec<Upgrade> {
     let mut out = Vec::new();
-    if let Some((localdb, syncs)) = pkgs.dbs.split_first() {
+    if let Some((localdb, syncs)) = dbs.inner.split_first() {
         for (li, local) in localdb.pkgs.iter().enumerate() {
             for (di, syncdb) in syncs.iter().enumerate() {
                 for (ri, remote) in syncdb.pkgs.iter().enumerate() {

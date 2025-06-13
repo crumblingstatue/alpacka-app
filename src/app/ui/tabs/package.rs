@@ -1,11 +1,8 @@
 use {
     super::remote_pkg_list::installed_label_for_remote_pkg,
     crate::{
-        app::{
-            Packages,
-            ui::{SharedUiState, cmd::Cmd},
-        },
-        packages::{Db, DbIdx, PkgIdx, PkgRef},
+        app::ui::{SharedUiState, cmd::Cmd},
+        packages::{Db, DbIdx, Dbs, PkgIdx, PkgRef},
         util::deduped_files,
     },
     alpacka::Pkg,
@@ -39,7 +36,7 @@ enum PkgTabTab {
     Files,
 }
 
-pub fn ui(ui: &mut egui::Ui, pkgs: &Packages, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab) {
+pub fn ui(ui: &mut egui::Ui, dbs: &Dbs, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab) {
     if ui.input(|inp| {
         let esc = inp.key_pressed(egui::Key::Escape);
         let ctrl_w = inp.modifiers.ctrl && inp.key_pressed(egui::Key::W);
@@ -47,7 +44,7 @@ pub fn ui(ui: &mut egui::Ui, pkgs: &Packages, ui_state: &mut SharedUiState, pkg_
     }) {
         pkg_tab.force_close = true;
     }
-    pkg_ui(ui, ui_state, pkg_tab, &pkgs.dbs);
+    pkg_ui(ui, ui_state, pkg_tab, &dbs.inner);
 }
 
 fn db_name_is_arch(name: &str) -> bool {

@@ -188,7 +188,7 @@ fn rpm_vercmp(a: &[u8], b: &[u8]) -> AbCmp {
                 return AbCmp::BNewer;
             }
         }
-        match a[a_cur..a_iter].cmp(&b[b_cur..b_iter]) {
+        match a.get(a_cur..a_iter).cmp(&b.get(b_cur..b_iter)) {
             std::cmp::Ordering::Less => return AbCmp::BNewer,
             std::cmp::Ordering::Greater => return AbCmp::ANewer,
             std::cmp::Ordering::Equal => {

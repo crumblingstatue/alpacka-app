@@ -13,7 +13,7 @@ use {
 
 pub fn ui(
     ui: &mut egui::Ui,
-    pac: &mut Packages,
+    pkgs: &mut Packages,
     ui_state: &mut SharedUiState,
     tab_state: &mut PkgListState,
 ) {
@@ -26,8 +26,8 @@ pub fn ui(
             }
             if re.changed() {
                 tab_state.query = PkgListQuery::compile(&tab_state.query_src);
-                pac.filt_local_pkgs =
-                    pac.dbs[0]
+                pkgs.filt_local_pkgs =
+                    pkgs.local_db()
                         .pkgs
                         .iter()
                         .enumerate()
@@ -47,7 +47,7 @@ pub fn ui(
                         .collect();
             }
             ui.spacing();
-            ui.label(format!("{} packages listed", pac.filt_local_pkgs.len()));
+            ui.label(format!("{} packages listed", pkgs.filt_local_pkgs.len()));
         });
         ui.add_space(4.0);
     });
@@ -65,9 +65,9 @@ pub fn ui(
         })
         .body(|mut body| {
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-            body.rows(22.0, pac.filt_local_pkgs.len(), |mut row| {
-                let idx = pac.filt_local_pkgs[row.index()];
-                let pkg = &pac.dbs[0].pkgs[idx.to_usize()];
+            body.rows(22.0, pkgs.filt_local_pkgs.len(), |mut row| {
+                let idx = pkgs.filt_local_pkgs[row.index()];
+                let pkg = &pkgs.local_db().pkgs[idx.to_usize()];
                 row.col(|ui| {
                     if ui.link(pkg.desc.name.as_str()).clicked() {
                         ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(idx)));

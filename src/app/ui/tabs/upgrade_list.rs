@@ -42,7 +42,7 @@ pub fn ui(
             if re.changed() {
                 tab_state.pkg_list.query = PkgListQuery::compile(&tab_state.pkg_list.query_src);
                 pkgs.filt_local_pkgs =
-                    pkgs.dbs[0]
+                    pkgs.local_db()
                         .pkgs
                         .iter()
                         .enumerate()
@@ -93,7 +93,7 @@ pub fn ui(
             body.rows(22.0, tab_state.upgrade_list.len(), |mut row| {
                 let upg = &tab_state.upgrade_list[row.index()];
                 let idx = upg.local;
-                let local = &pkgs.dbs[0].pkgs[idx.to_usize()];
+                let local = &pkgs.local_db().pkgs[idx.to_usize()];
                 let (rem_db, rem_pkg) = upg.remote.into_components();
                 let remote = &pkgs.dbs[rem_db.to_usize()].pkgs[rem_pkg.to_usize()];
                 row.col(|ui| {

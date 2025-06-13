@@ -13,12 +13,12 @@ use {
 
 pub fn ui(
     ui: &mut egui::Ui,
-    pac: &mut Packages,
+    pkgs: &mut Packages,
     ui_state: &mut SharedUiState,
     tab_state: &mut PkgListState,
 ) {
     egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
-        top_panel_ui(pac, tab_state, ui);
+        top_panel_ui(pkgs, tab_state, ui);
     });
     pkg_list_table_builder(ui)
         .header(18.0, |mut row| {
@@ -34,10 +34,10 @@ pub fn ui(
         })
         .body(|mut body| {
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-            let list = &pac.filt_remote_pkgs;
+            let list = &pkgs.filt_remote_pkgs;
             body.rows(22.0, list.len(), |mut row| {
                 let (db_idx, idx) = list[row.index()].into_components();
-                let Some(db) = pac.dbs.get(db_idx.to_usize()) else {
+                let Some(db) = pkgs.dbs.get(db_idx.to_usize()) else {
                     row.col(|ui| {
                         ui.label(format!("<Error: can't find db {db_idx:?}>"));
                     });
@@ -51,13 +51,18 @@ pub fn ui(
                 };
                 row.col(|ui| {
                     ui.horizontal(|ui| {
-                        let db_name = &pac.dbs[db_idx.to_usize()].name;
+                        let db_name = &pkgs.dbs[db_idx.to_usize()].name;
                         if ui.link(format!("{db_name}/{}", pkg.desc.name)).clicked() {
                             ui_state
                                 .cmd
                                 .push(Cmd::OpenPkgTab(PkgRef::from_components(db_idx, idx)));
                         }
-                        installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, &pac.dbs[0].pkgs);
+                        installed_label_for_remote_pkg(
+                            ui,
+                            ui_state,
+                            &pkg.desc,
+                            &pkgs.local_db().pkgs,
+                        );
                     });
                 });
                 row.col(|ui| {
@@ -70,7 +75,7 @@ pub fn ui(
         });
 }
 
-fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui::Ui) {
+fn top_panel_ui(pkgs: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         let re = ui.add(egui::TextEdit::singleline(&mut tab_state.query_src).hint_text("🔍 Query"));
         if ui.input(|inp| inp.key_pressed(egui::Key::Num2) && inp.modifiers.shift) {
@@ -78,7 +83,7 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
         }
         if re.changed() {
             tab_state.query = PkgListQuery::compile(&tab_state.query_src);
-            pac.filt_remote_pkgs = pac
+            pkgs.filt_remote_pkgs = pkgs
                 .dbs
                 .iter()
                 .enumerate()
@@ -94,7 +99,7 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
                     let filt_lo = tab_state.query.string.to_ascii_lowercase();
                     let mut flags = tab_state.query.flags;
                     if (flags.installed || flags.newer || flags.older)
-                        && let Some((_, cmp)) = remote_local_cmp(&pkg.desc, &pac.dbs[0].pkgs)
+                        && let Some((_, cmp)) = remote_local_cmp(&pkg.desc, &pkgs.local_db().pkgs)
                     {
                         flags.installed = false;
                         match cmp {
@@ -117,7 +122,7 @@ fn top_panel_ui(pac: &mut Packages, tab_state: &mut PkgListState, ui: &mut egui:
                 .collect();
         }
         ui.spacing();
-        ui.label(format!("{} packages listed", pac.filt_remote_pkgs.len()));
+        ui.label(format!("{} packages listed", pkgs.filt_remote_pkgs.len()));
     });
     ui.add_space(4.0);
 }

@@ -152,4 +152,9 @@ impl Packages {
             dbs: syncdbs,
         })
     }
+    pub fn local_db(&self) -> &Db {
+        // Invariant: self.dbs[0] is the local db
+        #[expect(clippy::indexing_slicing)]
+        &self.dbs[0]
+    }
 }

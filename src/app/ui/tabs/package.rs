@@ -8,7 +8,7 @@ use {
         packages::{DbIdx, Dbs, PkgIdx, PkgRef},
         util::deduped_files,
     },
-    alpacka::Pkg,
+    alpacka::{InstallReason, Pkg},
     eframe::egui,
     humansize::format_size_i,
     std::process::Command,
@@ -150,6 +150,10 @@ fn general_tab_ui(
         "Installed size: {}",
         format_size_i(pkg.desc.size, humansize::BINARY)
     ));
+    match pkg.desc.install_reason {
+        InstallReason::Explicit => ui.label("Explicitly installed"),
+        InstallReason::Dep => ui.label("Installed as a dependency"),
+    };
     deps_ui(ui, cmd, dbs, pkg);
     opt_deps_ui(ui, cmd, dbs.local_pkgs(), pkg);
     required_by_ui(ui, cmd, pkg, dbs, pkg_tab);

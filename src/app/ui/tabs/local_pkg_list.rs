@@ -7,6 +7,7 @@ use {
         },
         packages::{Dbs, PkgIdx, PkgRef},
     },
+    alpacka::InstallReason,
     eframe::egui,
     egui_extras::{Column, TableBuilder},
 };
@@ -79,6 +80,18 @@ pub fn ui(
                     return;
                 };
                 row.col(|ui| {
+                    let mut text = egui::RichText::new("📦");
+                    let hover_text;
+                    if matches!(pkg.desc.install_reason, InstallReason::Explicit) {
+                        hover_text = "Explicitly installed";
+                        text = text.strong();
+                    } else {
+                        hover_text = "Installed as a depdenency";
+                        text = text.weak();
+                    }
+                    ui.label(text)
+                        .on_hover_text(hover_text)
+                        .on_hover_cursor(egui::CursorIcon::Help);
                     let re = ui.link(pkg.desc.name.as_str());
                     re.context_menu(|ui| {
                         if ui.button("Remove (-Rscn)").clicked() {

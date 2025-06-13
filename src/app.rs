@@ -7,7 +7,7 @@ use {
 };
 
 pub struct AlpackaApp {
-    pkgs: Packages,
+    pkgs: Option<Packages>,
     ui: UiState,
     cfg: Config,
     pac_recv: std::sync::mpsc::Receiver<anyhow::Result<Packages>>,
@@ -17,7 +17,7 @@ pub struct AlpackaApp {
 impl AlpackaApp {
     pub fn new() -> Self {
         Self {
-            pkgs: Packages::default(),
+            pkgs: None,
             ui: UiState::default(),
             cfg: Config::load_or_default(),
             pac_recv: Packages::new_spawned(),

@@ -98,10 +98,10 @@ pub struct Db {
     pub pkgs: Vec<Pkg>,
 }
 
-#[derive(Default)]
 pub struct Packages {
     pub filt_local_pkgs: Vec<PkgIdx>,
     pub filt_remote_pkgs: Vec<PkgRef>,
+    /// Invariant: dbs[0] is present, and it's the local db
     pub dbs: Vec<Db>,
 }
 

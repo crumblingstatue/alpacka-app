@@ -100,7 +100,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                     match app.pac_recv.try_recv() {
                         Ok(result) => match result {
                             Ok(pkgs) => {
-                                app.pkgs = pkgs;
+                                app.pkgs = Some(pkgs);
                                 if app.open_upgrade_window {
                                     app.ui.dock_state.push_to_focused_leaf(Tab::UpgradeList(
                                         upgrade_list::State::default(),
@@ -135,7 +135,7 @@ pub fn central_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
         .show(
             ctx,
             &mut TabViewState {
-                pac: &mut app.pkgs,
+                pkgs: app.pkgs.as_mut(),
                 ui: &mut app.ui.shared,
             },
         );

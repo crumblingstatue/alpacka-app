@@ -145,6 +145,7 @@ name = "alpacka-app"
 version = "0.1.0"
 dependencies = [
  "alpacka",
+ "ansi_term_buf",
  "anyhow",
  "difference",
  "dirs",
@@ -153,7 +154,8 @@ dependencies = [
  "egui_dock",
  "egui_extras",
  "humansize",
- "proc-chan",
+ "nonblock",
+ "pty-process",
  "ron",
  "serde",
  "smol_str 0.3.2",
@@ -194,6 +196,11 @@ checksum = "819e7219dbd41043ac279b19830f2efc897156490d7fd6ea916720117ee66311"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "ansi_term_buf"
+version = "0.1.0"
+source = "git+https://github.com/crumblingstatue/ansi_term_buf.git#7763b6681af12c61143e05c4b4811106b955ecd2"
 
 [[package]]
 name = "anyhow"
@@ -1656,6 +1663,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "itoa"
+version = "1.0.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
+
+[[package]]
 name = "jni"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1948,6 +1961,15 @@ name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
+
+[[package]]
+name = "nonblock"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51c7a4f22e5f2e2bd805d6ab56f1ae87eb1815673e1b452048896fb687a8a3d4"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "num-traits"
@@ -2489,11 +2511,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "proc-chan"
-version = "0.1.0"
-source = "git+https://github.com/crumblingstatue/proc-chan.git#73bdb3afa385f7b09d8550b70151e3709d5b9d27"
-
-[[package]]
 name = "proc-macro-crate"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2529,6 +2546,14 @@ name = "profiling"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "afbdc74edc00b6f6a218ca6a5364d6226a259d4b8ea1af4a0ea063f27e179f4d"
+
+[[package]]
+name = "pty-process"
+version = "0.5.1"
+source = "git+https://github.com/crumblingstatue/pty-process.git?branch=as-raw-fd-pty-ref#f565f02731f93c894524aed602778b5f6e5fe022"
+dependencies = [
+ "rustix 0.38.44",
+]
 
 [[package]]
 name = "quick-xml"
@@ -2668,6 +2693,7 @@ checksum = "fdb5bc1ae2baa591800df16c9ca78619bf65c0488b41b96ccec5d11220d8c154"
 dependencies = [
  "bitflags 2.9.1",
  "errno",
+ "itoa",
  "libc",
  "linux-raw-sys 0.4.15",
  "windows-sys 0.59.0",

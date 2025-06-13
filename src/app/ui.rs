@@ -1,11 +1,15 @@
 use {
     super::{AlpackaApp, Packages},
+    ansi_term_buf::Term,
     cmd::CmdBuf,
-    eframe::egui,
+    eframe::egui::{self, TextBuffer},
     egui_colors::Colorix,
     egui_dock::{DockArea, DockState},
+    nonblock::NonBlockingReader,
+    pty_process::blocking::{Command as PtyCommand, Pty},
     std::{
-        process::{Command, ExitStatus},
+        io::Write,
+        process::{Child, ExitStatus},
         sync::mpsc::TryRecvError,
     },
     tabs::{Tab, TabViewState, upgrade_list},
@@ -34,45 +38,6 @@ impl Default for UiState {
             shared: SharedUiState::default(),
             dock_state: DockState::new(Tab::default_tabs()),
         }
-    }
-}
-
-pub struct PacChildHandler {
-    recv: Option<proc_chan::EventRecv>,
-    exit_status: Option<ExitStatus>,
-    out_buf: String,
-}
-
-impl PacChildHandler {
-    pub fn new(recv: proc_chan::EventRecv) -> Self {
-        Self {
-            recv: Some(recv),
-            exit_status: None,
-            out_buf: String::new(),
-        }
-    }
-    pub fn handle_messages(&mut self) -> anyhow::Result<()> {
-        if let Some(recv) = self.recv.as_mut() {
-            match recv.try_recv() {
-                Ok(ev) => match ev {
-                    proc_chan::Event::StdoutRead(result) => {
-                        self.out_buf.push_str(std::str::from_utf8(&result?)?);
-                    }
-                    proc_chan::Event::StderrRead(result) => {
-                        eprintln!("TODO: pacman stderr: {result:?}");
-                    }
-                    proc_chan::Event::Exit(exit_status) => {
-                        self.exit_status = Some(exit_status?);
-                        self.recv = None;
-                    }
-                },
-                Err(TryRecvError::Empty) => {}
-                Err(TryRecvError::Disconnected) => {
-                    self.recv = None;
-                }
-            }
-        }
-        Ok(())
     }
 }
 
@@ -115,7 +80,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                         Some(dir) => {
                             if ui.button("Open config dir").clicked() {
                                 ui.close_menu();
-                                let _ = Command::new("xdg-open").arg(dir).status();
+                                let _ = std::process::Command::new("xdg-open").arg(dir).status();
                             }
                         }
                         None => {
@@ -141,7 +106,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                                 }
                             }
                             Err(e) => {
-                                eprintln!("Failed to load pacma dbs: {e}");
+                                eprintln!("Failed to load pacman dbs: {e}");
                             }
                         },
                         Err(e) => match e {
@@ -174,49 +139,107 @@ pub fn central_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
         );
 }
 
+struct PacChildHandler {
+    child: Child,
+    pty: Pty,
+    term: Term,
+    exit_status: Option<ExitStatus>,
+    input_buf: String,
+}
+
+impl PacChildHandler {
+    fn update(&mut self) {
+        if self.exit_status.is_some() {
+            return;
+        }
+        let mut buf = Vec::new();
+        let mut nbr = match NonBlockingReader::from_fd(&self.pty) {
+            Ok(nbr) => nbr,
+            Err(e) => {
+                eprintln!("Failed to create non-blocking reader: {e}");
+                return;
+            }
+        };
+        match nbr.read_available(&mut buf) {
+            Ok(n_read) => {
+                if n_read != 0 {
+                    self.term.feed(&buf);
+                }
+            }
+            Err(e) => {
+                eprintln!("error reading from pacman: {e}");
+            }
+        }
+        match self.child.try_wait() {
+            Ok(Some(status)) => self.exit_status = Some(status),
+            Ok(None) => {}
+            Err(e) => {
+                eprintln!("Error waiting for pacman: {e}");
+            }
+        }
+    }
+}
+
 fn spawn_pacman_sy(pac_handler: &mut Option<PacChildHandler>) -> anyhow::Result<()> {
-    let mut command = Command::new("pkexec");
-    command.args(["pacman", "-Sy"]);
-    let recv = proc_chan::spawn(command, None)?;
-    *pac_handler = Some(PacChildHandler::new(recv));
+    let (pty, the_pts) = pty_process::blocking::open()?;
+    let child = PtyCommand::new("pkexec")
+        .args(["pacman", "-Sy"])
+        .spawn(the_pts)?;
+    *pac_handler = Some(PacChildHandler {
+        child,
+        pty,
+        term: Term::new(100),
+        exit_status: None,
+        input_buf: String::new(),
+    });
     Ok(())
 }
 
 pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
     let mut close_handler = false;
     if let Some(handler) = &mut app.ui.shared.pac_handler {
-        if let Err(e) = handler.handle_messages() {
-            eprintln!("pacman handler message error: {e}");
-        }
-        if !handler.out_buf.is_empty() {
-            egui::Modal::new(egui::Id::new("pacman output modal")).show(ctx, |ui| {
-                ui.heading("Pacman output");
-                ui.separator();
-                let avail_rect = ui.ctx().available_rect();
-                let w = (avail_rect.width() * 0.5).round();
-                ui.set_width(w);
-                egui::ScrollArea::both()
-                    .max_height((avail_rect.height() * 0.5).round())
-                    .max_width(w)
-                    .show(ui, |ui| {
-                        ui.set_width(1000.0);
-                        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                        ui.add(
-                            egui::TextEdit::multiline(&mut handler.out_buf.as_str())
-                                .code_editor()
-                                .desired_width(f32::INFINITY),
-                        );
-                    });
-                ui.separator();
-                if let Some(status) = &handler.exit_status {
-                    ui.label(format!("Pacman exited ({status})"));
-                    if ui.button("Close").clicked() {
-                        close_handler = true;
-                        app.pac_recv = Packages::new_spawned();
-                    }
+        handler.update();
+        let out = handler.term.contents_to_string();
+        egui::Modal::new(egui::Id::new("pacman output modal")).show(ctx, |ui| {
+            ui.heading("Pacman output");
+            ui.separator();
+            let avail_rect = ui.ctx().available_rect();
+            let w = (avail_rect.width() * 0.5).round();
+            ui.set_width(w);
+            egui::ScrollArea::both()
+                .max_height((avail_rect.height() * 0.5).round())
+                .max_width(w)
+                .show(ui, |ui| {
+                    ui.set_width(1000.0);
+                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+                    ui.add(
+                        egui::TextEdit::multiline(&mut out.as_str())
+                            .code_editor()
+                            .desired_width(f32::INFINITY),
+                    );
+                });
+            ui.separator();
+            ui.add(
+                egui::TextEdit::singleline(&mut handler.input_buf)
+                    .hint_text("pacman input")
+                    .desired_width(f32::INFINITY),
+            );
+            if ui.input(|inp| inp.key_pressed(egui::Key::Enter)) {
+                let mut buf = handler.input_buf.take();
+                buf.push('\n');
+                if let Err(e) = handler.pty.write_all(buf.as_bytes()) {
+                    eprintln!("Error writing input: {e}");
                 }
-            });
-        }
+            }
+            ui.separator();
+            if let Some(status) = &handler.exit_status {
+                ui.label(format!("Pacman exited ({status})"));
+                if ui.button("Close").clicked() {
+                    close_handler = true;
+                    app.pac_recv = Packages::new_spawned();
+                }
+            }
+        });
     }
     if close_handler {
         app.ui.shared.pac_handler = None;

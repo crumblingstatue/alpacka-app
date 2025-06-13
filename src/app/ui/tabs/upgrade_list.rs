@@ -5,8 +5,8 @@ use {
         packages::{DbIdx, Packages, PkgIdx, PkgRef},
         query_syntax::PkgListQuery,
     },
+    ansi_term_buf::Term,
     eframe::egui,
-    std::process::Command,
 };
 
 #[derive(Default)]
@@ -195,9 +195,16 @@ fn determine_upgrades(pkgs: &mut Packages) -> Vec<Upgrade> {
 }
 
 fn spawn_pacman_su(pac_handler: &mut Option<PacChildHandler>) -> anyhow::Result<()> {
-    let mut command = Command::new("pkexec");
-    command.args(["pacman", "-Su"]);
-    let recv = proc_chan::spawn(command, None)?;
-    *pac_handler = Some(PacChildHandler::new(recv));
+    let (pty, the_pts) = pty_process::blocking::open()?;
+    let child = pty_process::blocking::Command::new("pkexec")
+        .args(["pacman", "-Su"])
+        .spawn(the_pts)?;
+    *pac_handler = Some(PacChildHandler {
+        child,
+        pty,
+        term: Term::new(100),
+        exit_status: None,
+        input_buf: String::new(),
+    });
     Ok(())
 }

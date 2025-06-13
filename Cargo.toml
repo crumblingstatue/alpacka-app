@@ -17,5 +17,7 @@ serde.version = "1"
 serde.features = ["derive"]
 smol_str = "0.3.2"
 alpacka.git = "https://github.com/crumblingstatue/libalpacka.git"
-proc-chan.git = "https://github.com/crumblingstatue/proc-chan.git"
 difference = "2"
+pty-process = { git = "https://github.com/crumblingstatue/pty-process.git", branch = "as-raw-fd-pty-ref" }
+ansi_term_buf = { git = "https://github.com/crumblingstatue/ansi_term_buf.git" }
+nonblock = "0.2.0"

@@ -94,7 +94,10 @@ pub fn ui(
                         .on_hover_cursor(egui::CursorIcon::Help);
                     let re = ui.link(pkg.desc.name.as_str());
                     re.context_menu(|ui| {
-                        if ui.button("Remove (-Rscn)").clicked() {
+                        if ui
+                            .button(format!("🗑 Remove `{}` (-Rscn)", pkg.desc.name))
+                            .clicked()
+                        {
                             ui.close_menu();
                             ui_state.cmd.push(Cmd::Rscn(pkg.desc.name.clone()));
                         }

@@ -123,53 +123,55 @@ impl Dbs {
     }
 }
 
-impl PkgCache {
-    pub fn new_spawned() -> std::sync::mpsc::Receiver<anyhow::Result<(Self, Dbs)>> {
-        let (send, recv) = std::sync::mpsc::channel();
-        std::thread::spawn(move || send.send(Self::new()));
-        recv
-    }
-    fn new() -> anyhow::Result<(Self, Dbs)> {
-        let mut local_db = alpacka::read_local_db()?;
-        local_db.sort_by(|a, b| a.desc.name.cmp(&b.desc.name));
-        let mut syncdbs = Vec::new();
-        let local_len = local_db.len();
+pub type LoadResult = anyhow::Result<(PkgCache, Dbs)>;
+pub type LoadRecv = std::sync::mpsc::Receiver<LoadResult>;
+
+pub fn spawn_load_thread() -> LoadRecv {
+    let (send, recv) = std::sync::mpsc::channel();
+    std::thread::spawn(move || send.send(load()));
+    recv
+}
+
+fn load() -> LoadResult {
+    let mut local_db = alpacka::read_local_db()?;
+    local_db.sort_by(|a, b| a.desc.name.cmp(&b.desc.name));
+    let mut syncdbs = Vec::new();
+    let local_len = local_db.len();
+    syncdbs.push(Db {
+        name: "local".into(),
+        pkgs: local_db,
+    });
+    for db_name in [
+        "core-testing",
+        "core",
+        "extra-testing",
+        "extra",
+        "multilib-testing",
+        "multilib",
+    ] {
+        let mut pkgs = alpacka::read_syncdb(db_name)?;
+        pkgs.sort_by(|a, b| a.desc.name.cmp(&b.desc.name));
         syncdbs.push(Db {
-            name: "local".into(),
-            pkgs: local_db,
+            name: db_name.into(),
+            pkgs,
         });
-        for db_name in [
-            "core-testing",
-            "core",
-            "extra-testing",
-            "extra",
-            "multilib-testing",
-            "multilib",
-        ] {
-            let mut pkgs = alpacka::read_syncdb(db_name)?;
-            pkgs.sort_by(|a, b| a.desc.name.cmp(&b.desc.name));
-            syncdbs.push(Db {
-                name: db_name.into(),
-                pkgs,
-            });
-        }
-        Ok((
-            Self {
-                filt_local_pkgs: (0..local_len).map(PkgIdx::from_usize).collect(),
-                filt_remote_pkgs: {
-                    let mut vec = Vec::new();
-                    for (db_idx, db) in syncdbs.iter().enumerate().skip(1) {
-                        for i in 0..db.pkgs.len() {
-                            vec.push(PkgRef::from_components(
-                                DbIdx::from_usize(db_idx),
-                                PkgIdx::from_usize(i),
-                            ));
-                        }
-                    }
-                    vec
-                },
-            },
-            Dbs { inner: syncdbs },
-        ))
     }
+    Ok((
+        PkgCache {
+            filt_local_pkgs: (0..local_len).map(PkgIdx::from_usize).collect(),
+            filt_remote_pkgs: {
+                let mut vec = Vec::new();
+                for (db_idx, db) in syncdbs.iter().enumerate().skip(1) {
+                    for i in 0..db.pkgs.len() {
+                        vec.push(PkgRef::from_components(
+                            DbIdx::from_usize(db_idx),
+                            PkgIdx::from_usize(i),
+                        ));
+                    }
+                }
+                vec
+            },
+        },
+        Dbs { inner: syncdbs },
+    ))
 }

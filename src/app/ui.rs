@@ -1,5 +1,5 @@
 use {
-    super::{AlpackaApp, PkgCache},
+    super::AlpackaApp,
     ansi_term_buf::Term,
     cmd::CmdBuf,
     eframe::egui::{self, TextBuffer},
@@ -70,7 +70,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                     }
                     if ui.button("⟳ Refresh package list").clicked() {
                         ui.close_menu();
-                        app.pac_recv = PkgCache::new_spawned();
+                        app.load_recv = crate::packages::spawn_load_thread();
                     }
                 });
                 ui.menu_button("☰ Preferences", |ui| {
@@ -97,7 +97,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                     }
                 });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    match app.pac_recv.try_recv() {
+                    match app.load_recv.try_recv() {
                         Ok(result) => match result {
                             Ok((pkgs, dbs)) => {
                                 app.pkgs = pkgs;
@@ -246,7 +246,7 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
                 ui.label(format!("Pacman exited ({status})"));
                 if ui.button("Close").clicked() {
                     close_handler = true;
-                    app.pac_recv = PkgCache::new_spawned();
+                    app.load_recv = crate::packages::spawn_load_thread();
                 }
             }
         });

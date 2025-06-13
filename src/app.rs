@@ -3,7 +3,7 @@ mod ui;
 use {
     crate::{
         config::Config,
-        packages::{Dbs, PkgCache},
+        packages::{Dbs, LoadRecv, PkgCache},
     },
     egui_colors::{Colorix, tokens::ThemeColor},
     ui::UiState,
@@ -14,7 +14,7 @@ pub struct AlpackaApp {
     dbs: Option<Dbs>,
     ui: UiState,
     cfg: Config,
-    pac_recv: std::sync::mpsc::Receiver<anyhow::Result<(PkgCache, Dbs)>>,
+    load_recv: LoadRecv,
     open_upgrade_window: bool,
 }
 
@@ -25,7 +25,7 @@ impl AlpackaApp {
             dbs: None,
             ui: UiState::default(),
             cfg: Config::load_or_default(),
-            pac_recv: PkgCache::new_spawned(),
+            load_recv: crate::packages::spawn_load_thread(),
             open_upgrade_window: false,
         }
     }

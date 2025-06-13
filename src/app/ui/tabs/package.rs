@@ -1,7 +1,10 @@
 use {
     super::remote_pkg_list::installed_label_for_remote_pkg,
     crate::{
-        app::ui::{SharedUiState, cmd::Cmd},
+        app::ui::{
+            SharedUiState,
+            cmd::{Cmd, CmdBuf},
+        },
         packages::{Db, DbIdx, Dbs, PkgIdx, PkgRef},
         util::deduped_files,
     },
@@ -87,7 +90,7 @@ fn pkg_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab,
     });
     ui.separator();
     match pkg_tab.tab {
-        PkgTabTab::General => general_tab_ui(ui, ui_state, dbs, pkg, db_name),
+        PkgTabTab::General => general_tab_ui(ui, &mut ui_state.cmd, dbs, pkg, db_name),
         PkgTabTab::Files => files_tab_ui(ui, ui_state, pkg_tab, pkg),
     }
 }
@@ -109,13 +112,7 @@ fn files_tab_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut P
     }
 }
 
-fn general_tab_ui(
-    ui: &mut egui::Ui,
-    ui_state: &mut SharedUiState,
-    dbs: &Dbs,
-    pkg: &Pkg,
-    db_name: &str,
-) {
+fn general_tab_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, dbs: &Dbs, pkg: &Pkg, db_name: &str) {
     ui.label(pkg.desc.desc.as_deref().unwrap_or("<no description>"));
     if let Some(url) = pkg.desc.url.as_deref() {
         ui.horizontal(|ui| {
@@ -143,14 +140,14 @@ fn general_tab_ui(
         "Installed size: {}",
         format_size_i(pkg.desc.size, humansize::BINARY)
     ));
-    deps_ui(ui, ui_state, dbs, pkg);
-    opt_deps_ui(ui, ui_state, dbs.local_pkgs(), pkg);
-    required_by_ui(ui, ui_state, pkg, dbs);
-    optional_for_ui(ui, ui_state, pkg, dbs);
+    deps_ui(ui, cmd, dbs, pkg);
+    opt_deps_ui(ui, cmd, dbs.local_pkgs(), pkg);
+    required_by_ui(ui, cmd, pkg, dbs);
+    optional_for_ui(ui, cmd, pkg, dbs);
     provides_ui(ui, pkg);
 }
 
-fn required_by_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, dbs: &Dbs) {
+fn required_by_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs) {
     let mut reqs = Vec::new();
     for (db_i, db) in dbs.inner.iter().enumerate() {
         for (pkg_i, pkg2) in db.pkgs.iter().enumerate() {
@@ -169,7 +166,7 @@ fn required_by_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, db
         ui.horizontal_wrapped(|ui| {
             for (ref_, req) in reqs {
                 if ui.link(req.desc.name.as_str()).clicked() {
-                    ui_state.cmd.push(Cmd::OpenPkgTab(ref_));
+                    cmd.push(Cmd::OpenPkgTab(ref_));
                 }
             }
         });
@@ -184,7 +181,7 @@ fn provides_ui(ui: &mut egui::Ui, pkg: &Pkg) {
     }
 }
 
-fn optional_for_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, dbs: &Dbs) {
+fn optional_for_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs) {
     let opt_for = pkgs_that_optionally_depend_on(pkg, &dbs.inner);
     ui.heading(format!("Optional for ({})", opt_for.len()));
     if opt_for.is_empty() {
@@ -193,7 +190,7 @@ fn optional_for_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, d
         ui.horizontal_wrapped(|ui| {
             for (ref_, pkg) in opt_for {
                 if ui.link(pkg.desc.name.as_str()).clicked() {
-                    ui_state.cmd.push(Cmd::OpenPkgTab(ref_));
+                    cmd.push(Cmd::OpenPkgTab(ref_));
                 }
             }
         });
@@ -222,7 +219,7 @@ fn pkg_optionally_depends_on(pkg: &Pkg, dependency: &Pkg) -> bool {
     alpacka::dep::pkg_matches_opt_dep(&dependency.desc, &pkg.desc)
 }
 
-fn opt_deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, local_list: &[Pkg], pkg: &Pkg) {
+fn opt_deps_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, local_list: &[Pkg], pkg: &Pkg) {
     let opt_deps = &pkg.desc.opt_depends;
     ui.heading(format!("Optional dependencies ({})", opt_deps.len()));
     if opt_deps.is_empty() {
@@ -235,7 +232,7 @@ fn opt_deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, local_list: &[Pk
                 });
                 if let Some(ref_) = installed {
                     if ui.link(opt_dep.dep.name.as_str()).clicked() {
-                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(ref_)));
+                        cmd.push(Cmd::OpenPkgTab(PkgRef::local(ref_)));
 
                         if let Some(ver) = opt_dep.dep.ver.as_ref().map(|v| v.ver.as_str()) {
                             ui.label(format!("={ver}"));
@@ -255,7 +252,7 @@ fn opt_deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, local_list: &[Pk
     }
 }
 
-fn deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, dbs: &Dbs, pkg: &Pkg) {
+fn deps_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, dbs: &Dbs, pkg: &Pkg) {
     let deps = &pkg.desc.depends;
     ui.heading(format!("Dependencies ({})", deps.len()));
     if deps.is_empty() {
@@ -271,7 +268,7 @@ fn deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, dbs: &Dbs, pkg: &Pkg
                             &format!("{} ({})", dep.name, pkg.desc.name)
                         };
                         if ui.link(label).clicked() {
-                            ui_state.cmd.push(Cmd::OpenPkgTab(ref_));
+                            cmd.push(Cmd::OpenPkgTab(ref_));
                         }
                     }
                     None => {

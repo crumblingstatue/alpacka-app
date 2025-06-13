@@ -77,11 +77,7 @@ pub fn ui(
 
 fn top_panel_ui(pkgs: &mut PkgCache, dbs: &Dbs, tab_state: &mut PkgListState, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
-        let re = ui.add(egui::TextEdit::singleline(&mut tab_state.query_src).hint_text("🔍 Query"));
-        if ui.input(|inp| inp.key_pressed(egui::Key::Num2) && inp.modifiers.shift) {
-            re.request_focus();
-        }
-        if re.changed() {
+        if super::query_edit(ui, &mut tab_state.query_src).changed() {
             tab_state.query = PkgListQuery::compile(&tab_state.query_src);
             pkgs.filt_remote_pkgs = dbs
                 .remotes()

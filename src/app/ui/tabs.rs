@@ -90,3 +90,23 @@ pub struct PkgListState {
     query_src: String,
     query: PkgListQuery,
 }
+
+fn query_focus(ui: &egui::Ui, re: &egui::Response) {
+    let [ctrl, shift, num2, f] = ui.input(|inp| {
+        [
+            inp.modifiers.ctrl,
+            inp.modifiers.shift,
+            inp.key_pressed(egui::Key::Num2),
+            inp.key_pressed(egui::Key::F),
+        ]
+    });
+    if shift && num2 || ctrl && f {
+        re.request_focus();
+    }
+}
+
+fn query_edit(ui: &mut egui::Ui, s: &mut String) -> egui::Response {
+    let re = ui.add(egui::TextEdit::singleline(s).hint_text("🔍 Query (ctrl+f, @)"));
+    query_focus(ui, &re);
+    re
+}

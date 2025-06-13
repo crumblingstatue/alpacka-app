@@ -21,12 +21,7 @@ pub fn ui(
 ) {
     egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
         ui.horizontal(|ui| {
-            let re =
-                ui.add(egui::TextEdit::singleline(&mut tab_state.query_src).hint_text("🔍 Query"));
-            if ui.input(|inp| inp.key_pressed(egui::Key::Num2) && inp.modifiers.shift) {
-                re.request_focus();
-            }
-            if re.changed() {
+            if super::query_edit(ui, &mut tab_state.query_src).changed() {
                 tab_state.query = PkgListQuery::compile(&tab_state.query_src);
                 pkgs.filt_local_pkgs =
                     dbs.local_pkgs()

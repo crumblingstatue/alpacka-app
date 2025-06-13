@@ -99,7 +99,12 @@ fn pkg_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab,
 }
 
 fn files_tab_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab, pkg: &Pkg) {
-    ui.add(egui::TextEdit::singleline(&mut pkg_tab.files_filt_string).hint_text("🔍 Filter"));
+    let re = ui.add(
+        egui::TextEdit::singleline(&mut pkg_tab.files_filt_string).hint_text("🔍 Filter (ctrl+f)"),
+    );
+    if ui.input(|inp| inp.key_pressed(egui::Key::F) && inp.modifiers.ctrl) {
+        re.request_focus();
+    }
     let files = &pkg.files;
     let deduped_files = deduped_files(files).filter(|file| {
         file.to_ascii_lowercase()

@@ -54,7 +54,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                 ui.menu_button("⟳ Sync", |ui| {
                     if ui.button("🔁 Sync databases (pacman -Sy)").clicked() {
                         ui.close_menu();
-                        if let Err(e) = spawn_pacman_sy(&mut app.ui.shared.pac_handler) {
+                        if let Err(e) = spawn_pacman_cmd(&mut app.ui.shared.pac_handler, &["-Sy"]) {
                             app.ui.shared.error_popup = Some(e.to_string());
                         } else {
                             app.open_upgrade_window = true;
@@ -148,6 +148,15 @@ struct PacChildHandler {
 }
 
 impl PacChildHandler {
+    fn new(child: Child, pty: Pty) -> Self {
+        Self {
+            child,
+            pty,
+            term: Term::new(100),
+            exit_status: None,
+            input_buf: String::new(),
+        }
+    }
     fn update(&mut self) {
         if self.exit_status.is_some() {
             return;
@@ -180,18 +189,15 @@ impl PacChildHandler {
     }
 }
 
-fn spawn_pacman_sy(pac_handler: &mut Option<PacChildHandler>) -> anyhow::Result<()> {
+fn spawn_pacman_cmd(
+    pac_handler: &mut Option<PacChildHandler>,
+    args: &[&str],
+) -> anyhow::Result<()> {
     let (pty, the_pts) = pty_process::blocking::open()?;
     let child = PtyCommand::new("pkexec")
-        .args(["pacman", "-Sy"])
+        .args([["pacman"].as_slice(), args].concat())
         .spawn(the_pts)?;
-    *pac_handler = Some(PacChildHandler {
-        child,
-        pty,
-        term: Term::new(100),
-        exit_status: None,
-        input_buf: String::new(),
-    });
+    *pac_handler = Some(PacChildHandler::new(child, pty));
     Ok(())
 }
 

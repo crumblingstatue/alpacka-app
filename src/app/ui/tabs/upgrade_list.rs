@@ -1,11 +1,10 @@
 use {
     super::{PkgListState, local_pkg_list::pkg_list_table_builder, remote_pkg_list::pkg_ver_cmp},
     crate::{
-        app::ui::{PacChildHandler, SharedUiState, cmd::Cmd},
+        app::ui::{SharedUiState, cmd::Cmd, spawn_pacman_cmd},
         packages::{DbIdx, Packages, PkgIdx, PkgRef},
         query_syntax::PkgListQuery,
     },
-    ansi_term_buf::Term,
     eframe::egui,
 };
 
@@ -70,7 +69,7 @@ pub fn ui(
                     egui::Button::new("pacman -Su"),
                 )
                 .clicked()
-                && let Err(e) = spawn_pacman_su(&mut ui_state.pac_handler)
+                && let Err(e) = spawn_pacman_cmd(&mut ui_state.pac_handler, &["-Su"])
             {
                 ui_state.error_popup = Some(e.to_string());
             }
@@ -192,19 +191,4 @@ fn determine_upgrades(pkgs: &mut Packages) -> Vec<Upgrade> {
         }
     }
     out
-}
-
-fn spawn_pacman_su(pac_handler: &mut Option<PacChildHandler>) -> anyhow::Result<()> {
-    let (pty, the_pts) = pty_process::blocking::open()?;
-    let child = pty_process::blocking::Command::new("pkexec")
-        .args(["pacman", "-Su"])
-        .spawn(the_pts)?;
-    *pac_handler = Some(PacChildHandler {
-        child,
-        pty,
-        term: Term::new(100),
-        exit_status: None,
-        input_buf: String::new(),
-    });
-    Ok(())
 }

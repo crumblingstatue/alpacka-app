@@ -10,7 +10,10 @@
     unused_qualifications
 )]
 
-use {app::AlpackaApp, eframe::NativeOptions};
+use {
+    app::AlpackaApp,
+    eframe::{NativeOptions, egui::ViewportCommand},
+};
 
 mod app;
 mod config;
@@ -25,6 +28,8 @@ fn main() {
         "alpacka",
         NativeOptions::default(),
         Box::new(move |cc| {
+            cc.egui_ctx
+                .send_viewport_cmd(ViewportCommand::Maximized(true));
             app.sync_from_config(&cc.egui_ctx);
             Ok(Box::new(app))
         }),

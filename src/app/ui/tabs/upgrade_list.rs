@@ -6,6 +6,7 @@ use {
         query_syntax::PkgListQuery,
     },
     eframe::egui,
+    egui_extras::TableBody,
 };
 
 #[derive(Default)]
@@ -21,7 +22,6 @@ struct Upgrade {
     remote: PkgRef,
 }
 
-#[expect(clippy::too_many_lines)]
 pub fn ui(
     ui: &mut egui::Ui,
     pkgs: &mut PkgCache,
@@ -89,47 +89,56 @@ pub fn ui(
                 ui.label("Description");
             });
         })
-        .body(|mut body| {
-            body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-            body.rows(22.0, tab_state.upgrade_list.len(), |mut row| {
-                let Some(upg) = &tab_state.upgrade_list.get(row.index()) else {
-                    row.col(|ui| {
-                        ui.label("<unresolved upgrade>");
-                    });
-                    return;
-                };
-                let idx = upg.local;
-                let Some(local) = dbs.resolve_local(idx) else {
-                    row.col(|ui| {
-                        ui.label("<unresolved package>");
-                    });
-                    return;
-                };
-                let (_, Some(remote)) = dbs.resolve(upg.remote) else {
-                    row.col(|ui| {
-                        ui.label("<unresolved remote>");
-                    });
-                    return;
-                };
+        .body(|body| table_body_ui(body, tab_state, ui_state, dbs));
+}
+
+fn table_body_ui(
+    mut body: TableBody,
+    tab_state: &mut State,
+    ui_state: &mut SharedUiState,
+    dbs: &Dbs,
+) {
+    {
+        body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+        body.rows(22.0, tab_state.upgrade_list.len(), |mut row| {
+            let Some(upg) = &tab_state.upgrade_list.get(row.index()) else {
                 row.col(|ui| {
-                    if ui.link(local.desc.name.as_str()).clicked() {
-                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(idx)));
-                    }
+                    ui.label("<unresolved upgrade>");
                 });
+                return;
+            };
+            let idx = upg.local;
+            let Some(local) = dbs.resolve_local(idx) else {
                 row.col(|ui| {
-                    ui.label(ver_layout_job(local, remote));
+                    ui.label("<unresolved package>");
                 });
+                return;
+            };
+            let (_, Some(remote)) = dbs.resolve(upg.remote) else {
                 row.col(|ui| {
-                    ui.label(
-                        local
-                            .desc
-                            .desc
-                            .as_deref()
-                            .unwrap_or("<missing description>"),
-                    );
+                    ui.label("<unresolved remote>");
                 });
+                return;
+            };
+            row.col(|ui| {
+                if ui.link(local.desc.name.as_str()).clicked() {
+                    ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(idx)));
+                }
+            });
+            row.col(|ui| {
+                ui.label(ver_layout_job(local, remote));
+            });
+            row.col(|ui| {
+                ui.label(
+                    local
+                        .desc
+                        .desc
+                        .as_deref()
+                        .unwrap_or("<missing description>"),
+                );
             });
         });
+    }
 }
 
 fn ver_layout_job(local: &alpacka::Pkg, remote: &alpacka::Pkg) -> egui::text::LayoutJob {

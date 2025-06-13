@@ -26,7 +26,7 @@ impl<'s> AlpmVer<'s> {
                 break;
             }
         }
-        if bytes[epoch_term] == b':' {
+        if bytes.get(epoch_term).is_some_and(|&b| b == b':') {
             epoch = &src[..epoch_term];
             ver = &src[epoch_term + 1..];
         }

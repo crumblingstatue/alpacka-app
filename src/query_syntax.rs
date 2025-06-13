@@ -12,7 +12,9 @@ impl PkgListQuery {
         let mut flags = QueryFlags::default();
         while let Some(at) = head.find('@') {
             let end = head.find(' ').unwrap_or(head.len());
-            let token = &head[at..end];
+            let Some(token) = head.get(at..end) else {
+                break;
+            };
             match token {
                 "@installed" => flags.installed = true,
                 "@older" => flags.older = true,
@@ -21,7 +23,10 @@ impl PkgListQuery {
                 _ => break,
             }
             let next = std::cmp::min(end + 1, head.len());
-            head = &head[next..];
+            match head.get(next..) {
+                Some(next) => head = next,
+                None => break,
+            }
         }
         Self {
             flags,

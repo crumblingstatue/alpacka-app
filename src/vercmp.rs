@@ -27,12 +27,20 @@ impl<'s> AlpmVer<'s> {
             }
         }
         if bytes.get(epoch_term).is_some_and(|&b| b == b':') {
-            epoch = &src[..epoch_term];
-            ver = &src[epoch_term + 1..];
+            if let Some(new) = &src.get(..epoch_term) {
+                epoch = new;
+            }
+            if let Some(new) = &src.get(epoch_term + 1..) {
+                ver = new;
+            }
         }
         if let Some(hy_pos) = src.rfind('-') {
-            rel = &src[hy_pos + 1..];
-            ver = &src[..hy_pos];
+            if let Some(new) = &src.get(hy_pos + 1..) {
+                rel = new;
+            }
+            if let Some(new) = &src.get(..hy_pos) {
+                ver = new;
+            }
         }
         Self { epoch, ver, rel }
     }

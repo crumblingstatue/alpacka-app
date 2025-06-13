@@ -137,10 +137,10 @@ fn rpm_vercmp(a: &[u8], b: &[u8]) -> AbCmp {
     let mut a_cur = 0;
     let mut b_cur = 0;
     while a_cur != a.len() && b_cur != b.len() {
-        while !a[a_cur].is_ascii_alphanumeric() {
+        while !a.get(a_cur).is_some_and(u8::is_ascii_alphanumeric) {
             a_cur += 1;
         }
-        while !b[b_cur].is_ascii_alphanumeric() {
+        while !b.get(b_cur).is_some_and(u8::is_ascii_alphanumeric) {
             b_cur += 1;
         }
         match a_cur.cmp(&b_cur) {

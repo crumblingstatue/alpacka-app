@@ -37,26 +37,25 @@ pub fn ui(
             body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
             let list = &pkgs.filt_remote_pkgs;
             body.rows(22.0, list.len(), |mut row| {
-                let (db_idx, idx) = list[row.index()].into_components();
-                let Some(db) = dbs.inner.get(db_idx.to_usize()) else {
+                let pkg_ref = list[row.index()];
+                let (db, pkg) = dbs.resolve(pkg_ref);
+                let Some(db) = db else {
                     row.col(|ui| {
-                        ui.label(format!("<Error: can't find db {db_idx:?}>"));
+                        ui.label("<Unresolved db>");
                     });
                     return;
                 };
-                let Some(pkg) = db.pkgs.get(idx.to_usize()) else {
+                let Some(pkg) = pkg else {
                     row.col(|ui| {
-                        ui.label(format!("<Error: invalid index: {idx:?}>"));
+                        ui.label("<Unresolved package>");
                     });
                     return;
                 };
                 row.col(|ui| {
                     ui.horizontal(|ui| {
-                        let db_name = &dbs.inner[db_idx.to_usize()].name;
+                        let db_name = &db.name;
                         if ui.link(format!("{db_name}/{}", pkg.desc.name)).clicked() {
-                            ui_state
-                                .cmd
-                                .push(Cmd::OpenPkgTab(PkgRef::from_components(db_idx, idx)));
+                            ui_state.cmd.push(Cmd::OpenPkgTab(pkg_ref));
                         }
                         installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, &dbs.local().pkgs);
                     });

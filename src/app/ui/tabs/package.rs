@@ -44,7 +44,7 @@ pub fn ui(ui: &mut egui::Ui, dbs: &Dbs, ui_state: &mut SharedUiState, pkg_tab: &
     }) {
         pkg_tab.force_close = true;
     }
-    pkg_ui(ui, ui_state, pkg_tab, &dbs.inner);
+    pkg_ui(ui, ui_state, pkg_tab, dbs);
 }
 
 fn db_name_is_arch(name: &str) -> bool {
@@ -60,40 +60,35 @@ fn db_name_is_arch(name: &str) -> bool {
     .any(|repo| name == repo)
 }
 
-fn pkg_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab, dbs: &[Db]) {
-    let (db_id, pkg_id) = pkg_tab.id.into_components();
-    let Some(db) = dbs.get(db_id.to_usize()) else {
+fn pkg_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab, dbs: &Dbs) {
+    let (db, pkg) = dbs.resolve(pkg_tab.id);
+    let Some(db) = db else {
         ui.label("Unresolved database");
+        return;
+    };
+    let Some(pkg) = pkg else {
+        ui.label("<Unresolved package>");
         return;
     };
     let db_name = &db.name;
     let remote = pkg_tab.id.is_remote();
-    match db.pkgs.get(pkg_id.to_usize()) {
-        Some(pkg) => {
-            ui.horizontal(|ui| {
-                ui.label(format!("{db_name}/"));
-                ui.heading(pkg.desc.name.as_str());
-                ui.label(pkg.desc.version.as_str());
-                if remote {
-                    installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, &dbs[0].pkgs);
-                }
-            });
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.selectable_value(&mut pkg_tab.tab, PkgTabTab::General, "General");
-                ui.selectable_value(&mut pkg_tab.tab, PkgTabTab::Files, "File list");
-            });
-            ui.separator();
-            match pkg_tab.tab {
-                PkgTabTab::General => {
-                    general_tab_ui(ui, ui_state, dbs, pkg, db_name);
-                }
-                PkgTabTab::Files => files_tab_ui(ui, ui_state, pkg_tab, pkg),
-            }
+    ui.horizontal(|ui| {
+        ui.label(format!("{db_name}/"));
+        ui.heading(pkg.desc.name.as_str());
+        ui.label(pkg.desc.version.as_str());
+        if remote {
+            installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, &dbs.local().pkgs);
         }
-        None => {
-            ui.label("<Unresolved package>");
-        }
+    });
+    ui.separator();
+    ui.horizontal(|ui| {
+        ui.selectable_value(&mut pkg_tab.tab, PkgTabTab::General, "General");
+        ui.selectable_value(&mut pkg_tab.tab, PkgTabTab::Files, "File list");
+    });
+    ui.separator();
+    match pkg_tab.tab {
+        PkgTabTab::General => general_tab_ui(ui, ui_state, dbs, pkg, db_name),
+        PkgTabTab::Files => files_tab_ui(ui, ui_state, pkg_tab, pkg),
     }
 }
 
@@ -117,7 +112,7 @@ fn files_tab_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut P
 fn general_tab_ui(
     ui: &mut egui::Ui,
     ui_state: &mut SharedUiState,
-    dbs: &[Db],
+    dbs: &Dbs,
     pkg: &Pkg,
     db_name: &str,
 ) {
@@ -149,15 +144,15 @@ fn general_tab_ui(
         format_size_i(pkg.desc.size, humansize::BINARY)
     ));
     deps_ui(ui, ui_state, dbs, pkg);
-    opt_deps_ui(ui, ui_state, &dbs[0].pkgs, pkg);
+    opt_deps_ui(ui, ui_state, &dbs.local().pkgs, pkg);
     required_by_ui(ui, ui_state, pkg, dbs);
     optional_for_ui(ui, ui_state, pkg, dbs);
     provides_ui(ui, pkg);
 }
 
-fn required_by_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, dbs: &[Db]) {
+fn required_by_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, dbs: &Dbs) {
     let mut reqs = Vec::new();
-    for (db_i, db) in dbs.iter().enumerate() {
+    for (db_i, db) in dbs.inner.iter().enumerate() {
         for (pkg_i, pkg2) in db.pkgs.iter().enumerate() {
             if alpacka::dep::pkg_matches_dep(&pkg.desc, &pkg2.desc) {
                 reqs.push((
@@ -189,8 +184,8 @@ fn provides_ui(ui: &mut egui::Ui, pkg: &Pkg) {
     }
 }
 
-fn optional_for_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, dbs: &[Db]) {
-    let opt_for = pkgs_that_optionally_depend_on(pkg, dbs);
+fn optional_for_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg: &Pkg, dbs: &Dbs) {
+    let opt_for = pkgs_that_optionally_depend_on(pkg, &dbs.inner);
     ui.heading(format!("Optional for ({})", opt_for.len()));
     if opt_for.is_empty() {
         ui.label("<none>");
@@ -260,7 +255,7 @@ fn opt_deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, local_list: &[Pk
     }
 }
 
-fn deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, dbs: &[Db], pkg: &Pkg) {
+fn deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, dbs: &Dbs, pkg: &Pkg) {
     let deps = &pkg.desc.depends;
     ui.heading(format!("Dependencies ({})", deps.len()));
     if deps.is_empty() {
@@ -268,7 +263,7 @@ fn deps_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, dbs: &[Db], pkg: &Pk
     } else {
         ui.horizontal_wrapped(|ui| {
             for dep in deps {
-                match resolve_dep(dep, dbs) {
+                match resolve_dep(dep, &dbs.inner) {
                     Some((ref_, pkg)) => {
                         let label = if dep.name == pkg.desc.name {
                             dep.name.as_str()

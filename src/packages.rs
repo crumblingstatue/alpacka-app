@@ -110,6 +110,12 @@ pub struct Dbs {
 }
 
 impl Dbs {
+    pub fn resolve(&self, pkg_ref: PkgRef) -> (Option<&Db>, Option<&Pkg>) {
+        let (db_idx, pkg_idx) = pkg_ref.into_components();
+        let db = self.inner.get(db_idx.to_usize());
+        let pkg = db.and_then(|db| db.pkgs.get(pkg_idx.to_usize()));
+        (db, pkg)
+    }
     pub fn local(&self) -> &Db {
         // Invariant: self.dbs[0] is the local db
         #[expect(clippy::indexing_slicing)]

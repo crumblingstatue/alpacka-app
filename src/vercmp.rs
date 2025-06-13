@@ -150,7 +150,7 @@ fn rpm_vercmp(a: &[u8], b: &[u8]) -> AbCmp {
         }
         let mut a_iter = a_cur;
         let mut b_iter = b_cur;
-        let isnum = if a[a_iter].is_ascii_digit() {
+        let isnum = if a.get(a_iter).is_some_and(u8::is_ascii_digit) {
             while a.get(a_iter).is_some_and(u8::is_ascii_digit) {
                 a_iter += 1;
             }
@@ -193,7 +193,8 @@ fn rpm_vercmp(a: &[u8], b: &[u8]) -> AbCmp {
 
     if a_cur == a.len() && b_cur == b.len() {
         AbCmp::Same
-    } else if a_cur == a.len() && !b[b_cur].is_ascii_alphabetic() || a[a_cur].is_ascii_alphabetic()
+    } else if a_cur == a.len() && !b.get(b_cur).is_some_and(u8::is_ascii_alphabetic)
+        || a.get(a_cur).is_some_and(u8::is_ascii_alphabetic)
     {
         AbCmp::BNewer
     } else {

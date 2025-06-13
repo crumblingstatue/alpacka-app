@@ -17,6 +17,7 @@ impl PkgListQuery {
                 "@installed" => flags.installed = true,
                 "@older" => flags.older = true,
                 "@newer" => flags.newer = true,
+                "@asexplicit" | "@explicit" => flags.explicitly_installed = true,
                 _ => break,
             }
             let next = std::cmp::min(end + 1, head.len());
@@ -29,11 +30,13 @@ impl PkgListQuery {
     }
 }
 
+#[expect(clippy::struct_excessive_bools)]
 #[derive(Default, Debug, PartialEq, Clone, Copy)]
 pub struct QueryFlags {
     pub installed: bool,
     pub newer: bool,
     pub older: bool,
+    pub explicitly_installed: bool,
 }
 
 impl QueryFlags {
@@ -50,7 +53,8 @@ fn test_compile() {
             flags: QueryFlags {
                 installed: true,
                 newer: false,
-                older: false
+                older: false,
+                explicitly_installed: false,
             },
             string: "cool".into(),
         }
@@ -61,7 +65,8 @@ fn test_compile() {
             flags: QueryFlags {
                 installed: false,
                 newer: false,
-                older: false
+                older: false,
+                explicitly_installed: false,
             },
             string: "hello world".into(),
         }
@@ -72,7 +77,8 @@ fn test_compile() {
             flags: QueryFlags {
                 installed: false,
                 newer: false,
-                older: false
+                older: false,
+                explicitly_installed: false,
             },
             string: "@".into(),
         }

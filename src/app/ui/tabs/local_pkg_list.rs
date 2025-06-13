@@ -33,6 +33,11 @@ pub fn ui(
                         .iter()
                         .enumerate()
                         .filter_map(|(i, pkg)| {
+                            if tab_state.query.flags.explicitly_installed
+                                && !matches!(pkg.desc.install_reason, InstallReason::Explicit)
+                            {
+                                return None;
+                            }
                             let filt_lo = tab_state.query.string.to_ascii_lowercase();
                             (pkg.desc.name.contains(&filt_lo)
                                 || pkg.desc.desc.as_ref().is_some_and(|desc| {

@@ -19,6 +19,8 @@ pub struct PkgTab {
     tab: PkgTabTab,
     pub force_close: bool,
     files_filt_string: String,
+    /// Only do local-only dependency resolution
+    pub local_only: bool,
 }
 
 impl PkgTab {
@@ -28,6 +30,7 @@ impl PkgTab {
             tab: PkgTabTab::default(),
             force_close: false,
             files_filt_string: String::new(),
+            local_only: true,
         }
     }
 }
@@ -90,7 +93,7 @@ fn pkg_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab,
     });
     ui.separator();
     match pkg_tab.tab {
-        PkgTabTab::General => general_tab_ui(ui, &mut ui_state.cmd, dbs, pkg, db_name),
+        PkgTabTab::General => general_tab_ui(ui, &mut ui_state.cmd, dbs, pkg, db_name, pkg_tab),
         PkgTabTab::Files => files_tab_ui(ui, ui_state, pkg_tab, pkg),
     }
 }
@@ -112,7 +115,14 @@ fn files_tab_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut P
     }
 }
 
-fn general_tab_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, dbs: &Dbs, pkg: &Pkg, db_name: &str) {
+fn general_tab_ui(
+    ui: &mut egui::Ui,
+    cmd: &mut CmdBuf,
+    dbs: &Dbs,
+    pkg: &Pkg,
+    db_name: &str,
+    pkg_tab: &mut PkgTab,
+) {
     ui.label(pkg.desc.desc.as_deref().unwrap_or("<no description>"));
     if let Some(url) = pkg.desc.url.as_deref() {
         ui.horizontal(|ui| {
@@ -142,24 +152,17 @@ fn general_tab_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, dbs: &Dbs, pkg: &Pkg, db_
     ));
     deps_ui(ui, cmd, dbs, pkg);
     opt_deps_ui(ui, cmd, dbs.local_pkgs(), pkg);
-    required_by_ui(ui, cmd, pkg, dbs);
+    required_by_ui(ui, cmd, pkg, dbs, pkg_tab);
     optional_for_ui(ui, cmd, pkg, dbs);
     provides_ui(ui, pkg);
 }
 
-fn required_by_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs) {
-    let mut reqs = Vec::new();
-    for (db_i, db) in dbs.inner.iter().enumerate() {
-        for (pkg_i, pkg2) in db.pkgs.iter().enumerate() {
-            if alpacka::dep::pkg_matches_dep(&pkg.desc, &pkg2.desc) {
-                reqs.push((
-                    PkgRef::from_components(DbIdx::from_usize(db_i), PkgIdx::from_usize(pkg_i)),
-                    pkg2,
-                ));
-            }
-        }
-    }
-    ui.heading(format!("Required by ({})", reqs.len()));
+fn required_by_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs, pkg_tab: &mut PkgTab) {
+    let reqs = calc_required_by(pkg, dbs, pkg_tab.local_only);
+    ui.horizontal(|ui| {
+        ui.heading(format!("Required by ({})", reqs.len()));
+        ui.checkbox(&mut pkg_tab.local_only, "Local only");
+    });
     if reqs.is_empty() {
         ui.label("<none>");
     } else {
@@ -170,6 +173,34 @@ fn required_by_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs) {
                 }
             }
         });
+    }
+}
+
+fn calc_required_by<'db>(pkg: &Pkg, dbs: &'db Dbs, local_only: bool) -> Vec<(PkgRef, &'db Pkg)> {
+    let mut reqs = Vec::new();
+    if local_only {
+        calc_required_by_inner(pkg, &mut reqs, 0, dbs.local_pkgs());
+    } else {
+        for (db_i, db) in dbs.inner.iter().enumerate() {
+            calc_required_by_inner(pkg, &mut reqs, db_i, &db.pkgs);
+        }
+    }
+    reqs
+}
+
+fn calc_required_by_inner<'db>(
+    pkg: &Pkg,
+    reqs: &mut Vec<(PkgRef, &'db Pkg)>,
+    db_i: usize,
+    pkgs: &'db [Pkg],
+) {
+    for (pkg_i, pkg2) in pkgs.iter().enumerate() {
+        if alpacka::dep::pkg_matches_dep(&pkg.desc, &pkg2.desc) {
+            reqs.push((
+                PkgRef::from_components(DbIdx::from_usize(db_i), PkgIdx::from_usize(pkg_i)),
+                pkg2,
+            ));
+        }
     }
 }
 

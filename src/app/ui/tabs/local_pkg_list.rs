@@ -3,7 +3,7 @@ use {
     crate::{
         app::{
             PkgCache,
-            ui::{SharedUiState, cmd::Cmd},
+            ui::{SharedUiState, cmd::Cmd, ico},
         },
         packages::{Dbs, PkgIdx, PkgRef},
     },
@@ -83,7 +83,7 @@ fn table_body_ui(mut body: TableBody, pkgs: &PkgCache, dbs: &Dbs, ui_state: &mut
             return;
         };
         row.col(|ui| {
-            let mut text = egui::RichText::new("📦");
+            let mut text = egui::RichText::new(ico::PKG);
             let hover_text;
             if matches!(pkg.desc.install_reason, InstallReason::Explicit) {
                 hover_text = "Explicitly installed";
@@ -97,7 +97,7 @@ fn table_body_ui(mut body: TableBody, pkgs: &PkgCache, dbs: &Dbs, ui_state: &mut
                 .on_hover_cursor(egui::CursorIcon::Help);
             let re = ui.link(pkg.desc.name.as_str());
             re.context_menu(|ui| {
-                ui.label(pkg.desc.name.as_str());
+                ui.label([ico::PKG, " ", pkg.desc.name.as_str()].concat());
                 ui.separator();
                 if ui.button("🗑 Remove").clicked() {
                     ui.close_menu();

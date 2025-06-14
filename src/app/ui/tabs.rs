@@ -1,6 +1,10 @@
 use {
     super::SharedUiState,
-    crate::{app::PkgCache, packages::Dbs, query_syntax::PkgListQuery},
+    crate::{
+        app::{PkgCache, ui::ico},
+        packages::Dbs,
+        query_syntax::PkgListQuery,
+    },
     eframe::egui,
     egui_dock::TabViewer,
     package::PkgTab,
@@ -33,7 +37,7 @@ impl TabViewer for TabViewState<'_, '_, '_> {
             )
             .into(),
             Tab::UpgradeList(_) => "Upgrade list".into(),
-            Tab::Pkg(pkg) => format!("📦 {}", pkg.id.display(dbs)).into(),
+            Tab::Pkg(pkg) => format!("{} {}", ico::PKG, pkg.id.display(dbs)).into(),
             Tab::ColorTheme => "🎨 Color theme".into(),
             Tab::LoggerUi => "Log".into(),
         }

@@ -1,0 +1,1 @@
+pub const PKG: &str = "📦";

@@ -16,6 +16,7 @@ use {
 };
 
 pub mod cmd;
+mod ico;
 mod paint_util;
 mod tabs;
 

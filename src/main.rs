@@ -24,6 +24,10 @@ mod util;
 mod vercmp;
 
 fn main() {
+    if let Err(e) = egui_logger::builder().init() {
+        eprintln!("Fatal error. Failed to initialize logger: {e}");
+        return;
+    }
     let mut app = AlpackaApp::new();
     if let Err(e) = eframe::run_native(
         "alpacka",

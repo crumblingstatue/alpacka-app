@@ -91,6 +91,10 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                     }
                 });
                 ui.menu_button("❓ Debug", |ui| {
+                    if ui.button("Log").clicked() {
+                        ui.close_menu();
+                        app.ui.dock_state.push_to_first_leaf(Tab::LoggerUi);
+                    }
                     if ui.button("Error popup test").clicked() {
                         ui.close_menu();
                         app.ui.shared.error_popup = Some("This is a test error popup".into());

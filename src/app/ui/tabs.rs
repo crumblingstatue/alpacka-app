@@ -35,6 +35,7 @@ impl TabViewer for TabViewState<'_, '_, '_> {
             Tab::UpgradeList(_) => "Upgrade list".into(),
             Tab::Pkg(pkg) => format!("📦 {}", pkg.id.display(dbs)).into(),
             Tab::ColorTheme => "🎨 Color theme".into(),
+            Tab::LoggerUi => "Log".into(),
         }
     }
 
@@ -49,6 +50,7 @@ impl TabViewer for TabViewState<'_, '_, '_> {
             Tab::UpgradeList(state) => upgrade_list::ui(ui, self.pkgs, dbs, self.ui, state),
             Tab::Pkg(tab) => package::ui(ui, dbs, self.ui, tab),
             Tab::ColorTheme => color_theme::ui(ui, &mut self.ui.colorix),
+            Tab::LoggerUi => egui_logger::logger_ui().show(ui),
         }
     }
 
@@ -62,7 +64,7 @@ impl TabViewer for TabViewState<'_, '_, '_> {
 
     fn force_close(&mut self, tab: &mut Self::Tab) -> bool {
         match tab {
-            Tab::LocalPkgList(_) | Tab::RemotePkgList(_) | Tab::ColorTheme => false,
+            Tab::LocalPkgList(_) | Tab::RemotePkgList(_) | Tab::ColorTheme | Tab::LoggerUi => false,
             Tab::UpgradeList(state) => state.force_close,
             Tab::Pkg(pkg_tab) => pkg_tab.force_close,
         }
@@ -75,6 +77,7 @@ pub enum Tab {
     UpgradeList(upgrade_list::State),
     Pkg(PkgTab),
     ColorTheme,
+    LoggerUi,
 }
 impl Tab {
     pub(crate) fn default_tabs() -> Vec<Self> {

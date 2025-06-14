@@ -219,6 +219,7 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
             egui::ScrollArea::both()
                 .max_height((avail_rect.height() * 0.5).round())
                 .max_width(w)
+                .stick_to_bottom(true)
                 .show(ui, |ui| {
                     ui.set_width(1000.0);
                     ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);

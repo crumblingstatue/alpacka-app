@@ -162,7 +162,7 @@ fn general_tab_ui(
     deps_ui(ui, cmd, dbs, pkg);
     opt_deps_ui(ui, cmd, dbs.local_pkgs(), pkg);
     required_by_ui(ui, cmd, pkg, dbs, pkg_tab);
-    optional_for_ui(ui, cmd, pkg, dbs);
+    optional_for_ui(ui, cmd, pkg, dbs, pkg_tab.local_only);
     provides_ui(ui, pkg);
 }
 
@@ -221,15 +221,22 @@ fn provides_ui(ui: &mut egui::Ui, pkg: &Pkg) {
     }
 }
 
-fn optional_for_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs) {
-    let opt_for = pkgs_that_optionally_depend_on(pkg, dbs);
+fn optional_for_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs, local_only: bool) {
+    let opt_for = pkgs_that_optionally_depend_on(pkg, dbs, local_only);
     ui.heading(format!("Optional for ({})", opt_for.len()));
     if opt_for.is_empty() {
         ui.label("<none>");
     } else {
         ui.horizontal_wrapped(|ui| {
             for (ref_, pkg) in opt_for {
-                if ui.link(pkg.desc.name.as_str()).clicked() {
+                let s;
+                let label = if ref_.is_local() {
+                    pkg.desc.name.as_str()
+                } else {
+                    s = ref_.display(dbs).to_string();
+                    &s
+                };
+                if ui.link(label).clicked() {
                     cmd.push(Cmd::OpenPkgTab(ref_));
                 }
             }
@@ -237,19 +244,36 @@ fn optional_for_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs) {
     }
 }
 
-fn pkgs_that_optionally_depend_on<'db>(dependency: &Pkg, dbs: &'db Dbs) -> Vec<(PkgRef, &'db Pkg)> {
+fn pkgs_that_optionally_depend_on<'db>(
+    dependency: &Pkg,
+    dbs: &'db Dbs,
+    local_only: bool,
+) -> Vec<(PkgRef, &'db Pkg)> {
     let mut pkgs = Vec::new();
-    for (db_i, db) in dbs.all() {
-        for (pkg_i, pkg) in db.pkgs.iter().enumerate() {
-            if pkg_optionally_depends_on(pkg, dependency) {
-                pkgs.push((
-                    PkgRef::from_components(db_i, PkgIdx::from_usize(pkg_i)),
-                    pkg,
-                ));
-            }
+    if local_only {
+        pkgs_that_opt_depend_on_inner(dependency, &mut pkgs, DbIdx::LOCAL, dbs.local_pkgs());
+    } else {
+        for (db_i, db) in dbs.all() {
+            pkgs_that_opt_depend_on_inner(dependency, &mut pkgs, db_i, &db.pkgs);
         }
     }
     pkgs
+}
+
+fn pkgs_that_opt_depend_on_inner<'db>(
+    dependency: &Pkg,
+    pkgs: &mut Vec<(PkgRef, &'db Pkg)>,
+    db_i: DbIdx,
+    db_pkgs: &'db [Pkg],
+) {
+    for (pkg_i, pkg) in db_pkgs.iter().enumerate() {
+        if pkg_optionally_depends_on(pkg, dependency) {
+            pkgs.push((
+                PkgRef::from_components(db_i, PkgIdx::from_usize(pkg_i)),
+                pkg,
+            ));
+        }
+    }
 }
 
 fn pkg_optionally_depends_on(pkg: &Pkg, dependency: &Pkg) -> bool {

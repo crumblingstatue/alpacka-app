@@ -99,21 +99,26 @@ fn table_body_ui(mut body: TableBody, pkgs: &PkgCache, dbs: &Dbs, ui_state: &mut
             re.context_menu(|ui| {
                 ui.label([ico::PKG, " ", pkg.desc.name.as_str()].concat());
                 ui.separator();
-                if ui.button("🗑 Remove").clicked() {
+                if ui.button([ico::TRASH, " Remove"].concat()).clicked() {
                     ui.close_menu();
                     ui_state.cmd.push(Cmd::Rscn(pkg.desc.name.clone()));
                 }
                 match pkg.desc.install_reason {
                     InstallReason::Explicit => {
                         if ui
-                            .button("Change install reason to \"dependency\"")
+                            .button(
+                                [ico::NOTE, " Change install reason to \"dependency\""].concat(),
+                            )
                             .clicked()
                         {
                             ui_state.cmd.push(Cmd::AsDep(pkg.desc.name.clone()));
                         }
                     }
                     InstallReason::Dep => {
-                        if ui.button("Change install reason to \"explicit\"").clicked() {
+                        if ui
+                            .button([ico::NOTE, " Change install reason to \"explicit\""].concat())
+                            .clicked()
+                        {
                             ui_state.cmd.push(Cmd::AsExplicit(pkg.desc.name.clone()));
                         }
                     }

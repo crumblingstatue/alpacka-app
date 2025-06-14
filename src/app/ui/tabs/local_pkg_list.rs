@@ -12,6 +12,7 @@ use {
     egui_extras::{Column, TableBuilder},
 };
 
+#[expect(clippy::too_many_lines)]
 pub fn ui(
     ui: &mut egui::Ui,
     pkgs: &mut PkgCache,
@@ -94,12 +95,26 @@ pub fn ui(
                         .on_hover_cursor(egui::CursorIcon::Help);
                     let re = ui.link(pkg.desc.name.as_str());
                     re.context_menu(|ui| {
-                        if ui
-                            .button(format!("🗑 Remove `{}` (-Rscn)", pkg.desc.name))
-                            .clicked()
-                        {
+                        ui.label(pkg.desc.name.as_str());
+                        ui.separator();
+                        if ui.button("🗑 Remove").clicked() {
                             ui.close_menu();
                             ui_state.cmd.push(Cmd::Rscn(pkg.desc.name.clone()));
+                        }
+                        match pkg.desc.install_reason {
+                            InstallReason::Explicit => {
+                                if ui
+                                    .button("Change install reason to \"dependency\"")
+                                    .clicked()
+                                {
+                                    ui_state.cmd.push(Cmd::AsDep(pkg.desc.name.clone()));
+                                }
+                            }
+                            InstallReason::Dep => {
+                                if ui.button("Change install reason to \"explicit\"").clicked() {
+                                    ui_state.cmd.push(Cmd::AsExplicit(pkg.desc.name.clone()));
+                                }
+                            }
                         }
                     });
                     if re.clicked() {

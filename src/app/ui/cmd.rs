@@ -22,6 +22,8 @@ impl CmdBuf {
 pub enum Cmd {
     OpenPkgTab(PkgRef),
     Rscn(smol_str::SmolStr),
+    AsDep(smol_str::SmolStr),
+    AsExplicit(smol_str::SmolStr),
 }
 
 pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {
@@ -71,6 +73,22 @@ pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {
                 if let Err(e) = spawn_pacman_cmd_root_pkexec(
                     &mut app.ui.shared.pac_handler,
                     &["-Rscn", pkg_name.as_str()],
+                ) {
+                    app.ui.shared.error_popup = Some(e.to_string());
+                }
+            }
+            Cmd::AsDep(pkg_name) => {
+                if let Err(e) = spawn_pacman_cmd_root_pkexec(
+                    &mut app.ui.shared.pac_handler,
+                    &["-D", pkg_name.as_str(), "--asdeps"],
+                ) {
+                    app.ui.shared.error_popup = Some(e.to_string());
+                }
+            }
+            Cmd::AsExplicit(pkg_name) => {
+                if let Err(e) = spawn_pacman_cmd_root_pkexec(
+                    &mut app.ui.shared.pac_handler,
+                    &["-D", pkg_name.as_str(), "--asexplicit"],
                 ) {
                     app.ui.shared.error_popup = Some(e.to_string());
                 }

@@ -177,7 +177,12 @@ fn required_by_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, pkg: &Pkg, dbs: &Dbs, pkg
     } else {
         ui.horizontal_wrapped(|ui| {
             for (ref_, req) in reqs {
-                if ui.link(req.desc.name.as_str()).clicked() {
+                let label = if ref_.is_local() {
+                    req.desc.name.as_str()
+                } else {
+                    &ref_.display(dbs).to_string()
+                };
+                if ui.link(label).clicked() {
                     cmd.push(Cmd::OpenPkgTab(ref_));
                 }
             }

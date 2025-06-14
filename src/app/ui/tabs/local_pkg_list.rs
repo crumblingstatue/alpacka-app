@@ -9,10 +9,9 @@ use {
     },
     alpacka::InstallReason,
     eframe::egui,
-    egui_extras::{Column, TableBuilder},
+    egui_extras::{Column, TableBody, TableBuilder},
 };
 
-#[expect(clippy::too_many_lines)]
 pub fn ui(
     ui: &mut egui::Ui,
     pkgs: &mut PkgCache,
@@ -65,70 +64,72 @@ pub fn ui(
                 ui.label("Description");
             });
         })
-        .body(|mut body| {
-            body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-            body.rows(22.0, pkgs.filt_local_pkgs.len(), |mut row| {
-                let Some(idx) = pkgs.filt_local_pkgs.get(row.index()) else {
-                    row.col(|ui| {
-                        ui.label("<Unresolved package index>");
-                    });
-                    return;
-                };
-                let Some(pkg) = dbs.resolve_local(*idx) else {
-                    row.col(|ui| {
-                        ui.label("<Unresolved package>");
-                    });
-                    return;
-                };
-                row.col(|ui| {
-                    let mut text = egui::RichText::new("📦");
-                    let hover_text;
-                    if matches!(pkg.desc.install_reason, InstallReason::Explicit) {
-                        hover_text = "Explicitly installed";
-                        text = text.strong();
-                    } else {
-                        hover_text = "Installed as a depdenency";
-                        text = text.weak();
-                    }
-                    ui.label(text)
-                        .on_hover_text(hover_text)
-                        .on_hover_cursor(egui::CursorIcon::Help);
-                    let re = ui.link(pkg.desc.name.as_str());
-                    re.context_menu(|ui| {
-                        ui.label(pkg.desc.name.as_str());
-                        ui.separator();
-                        if ui.button("🗑 Remove").clicked() {
-                            ui.close_menu();
-                            ui_state.cmd.push(Cmd::Rscn(pkg.desc.name.clone()));
-                        }
-                        match pkg.desc.install_reason {
-                            InstallReason::Explicit => {
-                                if ui
-                                    .button("Change install reason to \"dependency\"")
-                                    .clicked()
-                                {
-                                    ui_state.cmd.push(Cmd::AsDep(pkg.desc.name.clone()));
-                                }
-                            }
-                            InstallReason::Dep => {
-                                if ui.button("Change install reason to \"explicit\"").clicked() {
-                                    ui_state.cmd.push(Cmd::AsExplicit(pkg.desc.name.clone()));
-                                }
-                            }
-                        }
-                    });
-                    if re.clicked() {
-                        ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(*idx)));
-                    }
-                });
-                row.col(|ui| {
-                    ui.label(pkg.desc.version.as_str());
-                });
-                row.col(|ui| {
-                    ui.label(pkg.desc.desc.as_deref().unwrap_or("<missing description>"));
-                });
+        .body(|body| table_body_ui(body, pkgs, dbs, ui_state));
+}
+
+fn table_body_ui(mut body: TableBody, pkgs: &PkgCache, dbs: &Dbs, ui_state: &mut SharedUiState) {
+    body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+    body.rows(22.0, pkgs.filt_local_pkgs.len(), |mut row| {
+        let Some(idx) = pkgs.filt_local_pkgs.get(row.index()) else {
+            row.col(|ui| {
+                ui.label("<Unresolved package index>");
             });
+            return;
+        };
+        let Some(pkg) = dbs.resolve_local(*idx) else {
+            row.col(|ui| {
+                ui.label("<Unresolved package>");
+            });
+            return;
+        };
+        row.col(|ui| {
+            let mut text = egui::RichText::new("📦");
+            let hover_text;
+            if matches!(pkg.desc.install_reason, InstallReason::Explicit) {
+                hover_text = "Explicitly installed";
+                text = text.strong();
+            } else {
+                hover_text = "Installed as a depdenency";
+                text = text.weak();
+            }
+            ui.label(text)
+                .on_hover_text(hover_text)
+                .on_hover_cursor(egui::CursorIcon::Help);
+            let re = ui.link(pkg.desc.name.as_str());
+            re.context_menu(|ui| {
+                ui.label(pkg.desc.name.as_str());
+                ui.separator();
+                if ui.button("🗑 Remove").clicked() {
+                    ui.close_menu();
+                    ui_state.cmd.push(Cmd::Rscn(pkg.desc.name.clone()));
+                }
+                match pkg.desc.install_reason {
+                    InstallReason::Explicit => {
+                        if ui
+                            .button("Change install reason to \"dependency\"")
+                            .clicked()
+                        {
+                            ui_state.cmd.push(Cmd::AsDep(pkg.desc.name.clone()));
+                        }
+                    }
+                    InstallReason::Dep => {
+                        if ui.button("Change install reason to \"explicit\"").clicked() {
+                            ui_state.cmd.push(Cmd::AsExplicit(pkg.desc.name.clone()));
+                        }
+                    }
+                }
+            });
+            if re.clicked() {
+                ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(*idx)));
+            }
         });
+        row.col(|ui| {
+            ui.label(pkg.desc.version.as_str());
+        });
+        row.col(|ui| {
+            ui.label(pkg.desc.desc.as_deref().unwrap_or("<missing description>"));
+        });
+    });
 }
 
 pub fn pkg_list_table_builder(ui: &'_ mut egui::Ui) -> TableBuilder<'_> {

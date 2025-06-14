@@ -165,6 +165,7 @@ dependencies = [
  "egui_extras",
  "egui_logger",
  "humansize",
+ "log",
  "nonblock",
  "pty-process",
  "ron",

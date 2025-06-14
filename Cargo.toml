@@ -22,6 +22,7 @@ pty-process = { git = "https://github.com/crumblingstatue/pty-process.git", bran
 ansi_term_buf = { git = "https://github.com/crumblingstatue/ansi_term_buf.git" }
 nonblock = "0.2.0"
 egui_logger = "0.7.0"
+log = "0.4.27"
 
 [profile.release]
 panic = "abort"

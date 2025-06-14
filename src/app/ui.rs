@@ -113,7 +113,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                                 }
                             }
                             Err(e) => {
-                                eprintln!("Failed to load pacman dbs: {e}");
+                                log::error!("Failed to load pacman dbs: {e}");
                             }
                         },
                         Err(e) => match e {
@@ -173,7 +173,7 @@ impl PacChildHandler {
         let mut nbr = match NonBlockingReader::from_fd(&self.pty) {
             Ok(nbr) => nbr,
             Err(e) => {
-                eprintln!("Failed to create non-blocking reader: {e}");
+                log::error!("Failed to create non-blocking reader: {e}");
                 return;
             }
         };
@@ -184,14 +184,14 @@ impl PacChildHandler {
                 }
             }
             Err(e) => {
-                eprintln!("error reading from pacman: {e}");
+                log::error!("error reading from pacman: {e}");
             }
         }
         match self.child.try_wait() {
             Ok(Some(status)) => self.exit_status = Some(status),
             Ok(None) => {}
             Err(e) => {
-                eprintln!("Error waiting for pacman: {e}");
+                log::error!("Error waiting for pacman: {e}");
             }
         }
     }
@@ -243,7 +243,7 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
                 let mut buf = handler.input_buf.take();
                 buf.push('\n');
                 if let Err(e) = handler.pty.write_all(buf.as_bytes()) {
-                    eprintln!("Error writing input: {e}");
+                    log::error!("Error writing input: {e}");
                 }
             }
             ui.separator();

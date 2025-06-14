@@ -27,7 +27,7 @@ impl Config {
         match Self::load() {
             Ok(cfg) => cfg,
             Err(e) => {
-                eprintln!("Error loading config: {e}. Using default.");
+                log::error!("Error loading config: {e}. Using default.");
                 Self::default()
             }
         }

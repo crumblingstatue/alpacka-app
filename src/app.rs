@@ -57,7 +57,7 @@ impl eframe::App for AlpackaApp {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.sync_to_config();
         if let Err(e) = self.cfg.save() {
-            eprintln!("Failed to save config: {e}");
+            log::error!("Failed to save config: {e}");
         }
     }
 }

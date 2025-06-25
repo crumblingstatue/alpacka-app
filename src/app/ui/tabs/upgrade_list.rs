@@ -1,12 +1,12 @@
 use {
-    super::{PkgListState, local_pkg_list::pkg_list_table_builder, remote_pkg_list::pkg_ver_cmp},
+    super::{PkgListState, remote_pkg_list::pkg_ver_cmp},
     crate::{
         app::ui::{SharedUiState, cmd::Cmd, spawn_pacman_cmd_root_pkexec},
         packages::{DbIdx, Dbs, PkgCache, PkgIdx, PkgRef},
         query_syntax::PkgListQuery,
     },
     eframe::egui,
-    egui_extras::TableBody,
+    egui_extras::{Column, TableBody, TableBuilder},
 };
 
 #[derive(Default)]
@@ -71,8 +71,11 @@ pub fn ui(
         });
         ui.add_space(4.0);
     });
-    pkg_list_table_builder(ui)
+    remote_pkg_list_table_builder(ui)
         .header(18.0, |mut row| {
+            row.col(|ui| {
+                ui.label("Remote");
+            });
             row.col(|ui| {
                 ui.label("Name");
             });
@@ -84,6 +87,17 @@ pub fn ui(
             });
         })
         .body(|body| table_body_ui(body, tab_state, ui_state, dbs));
+}
+
+fn remote_pkg_list_table_builder(ui: &'_ mut egui::Ui) -> TableBuilder<'_> {
+    TableBuilder::new(ui)
+        .column(Column::auto())
+        .column(Column::auto())
+        .column(Column::auto())
+        .column(Column::remainder())
+        .auto_shrink(false)
+        .striped(true)
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
 }
 
 fn table_body_ui(
@@ -108,19 +122,26 @@ fn table_body_ui(
                 });
                 return;
             };
-            let (_, Some(remote)) = dbs.resolve(upg.remote) else {
+            let (remote_db, Some(remote_pkg)) = dbs.resolve(upg.remote) else {
                 row.col(|ui| {
                     ui.label("<unresolved remote>");
                 });
                 return;
             };
             row.col(|ui| {
+                if let Some(remote_db) = remote_db
+                    && ui.small_button(remote_db.name.as_str()).clicked()
+                {
+                    ui_state.cmd.push(Cmd::OpenPkgTab(upg.remote));
+                }
+            });
+            row.col(|ui| {
                 if ui.link(local.desc.name.as_str()).clicked() {
                     ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(idx)));
                 }
             });
             row.col(|ui| {
-                ui.label(ver_layout_job(local, remote));
+                ui.label(ver_layout_job(local, remote_pkg));
             });
             row.col(|ui| {
                 ui.label(

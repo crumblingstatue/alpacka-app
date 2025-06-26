@@ -160,7 +160,7 @@ fn general_tab_ui(
         InstallReason::Dep => ui.label("Installed as a dependency"),
     };
     deps_ui(ui, cmd, dbs, pkg);
-    opt_deps_ui(ui, cmd, dbs.local_pkgs(), pkg);
+    opt_deps_ui(ui, cmd, dbs.local_pkgs(), pkg, dbs);
     required_by_ui(ui, cmd, pkg, dbs, pkg_tab);
     optional_for_ui(ui, cmd, pkg, dbs, pkg_tab.local_only);
     provides_ui(ui, pkg);
@@ -285,7 +285,7 @@ fn pkg_optionally_depends_on(pkg: &Pkg, dependency: &Pkg) -> bool {
     alpacka::dep::pkg_matches_opt_dep(&dependency.desc, &pkg.desc)
 }
 
-fn opt_deps_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, local_list: &[Pkg], pkg: &Pkg) {
+fn opt_deps_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, local_list: &[Pkg], pkg: &Pkg, dbs: &Dbs) {
     let opt_deps = &pkg.desc.opt_depends;
     ui.heading(format!("Optional dependencies ({})", opt_deps.len()));
     if opt_deps.is_empty() {
@@ -312,6 +312,18 @@ fn opt_deps_ui(ui: &mut egui::Ui, cmd: &mut CmdBuf, local_list: &[Pkg], pkg: &Pk
                 }
                 if installed.is_some() {
                     ui.label("[installed]");
+                } else {
+                    for pkgref in dbs.remote_pkgs_for_name(&opt_dep.dep.name) {
+                        let (Some(db), Some(pkg)) = dbs.resolve(pkgref) else {
+                            ui.label("<unresolved>");
+                            continue;
+                        };
+                        let remote_name = &db.name;
+                        let pkg_name = &pkg.desc.name;
+                        if ui.link(format!("{remote_name}/{pkg_name}")).clicked() {
+                            cmd.push(Cmd::OpenPkgTab(pkgref));
+                        }
+                    }
                 }
             });
         }

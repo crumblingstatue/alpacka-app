@@ -138,6 +138,18 @@ impl Dbs {
         #[expect(clippy::unwrap_used)]
         self.inner.split_first().unwrap()
     }
+    /// Returns a list of remote packages that have the provided name
+    pub fn remote_pkgs_for_name(&self, name: &str) -> impl Iterator<Item = PkgRef> {
+        self.remotes().flat_map(move |(db_idx, db)| {
+            db.pkgs
+                .iter()
+                .enumerate()
+                .filter_map(move |(pkg_idx, pkg)| {
+                    (pkg.desc.name == name)
+                        .then_some(PkgRef::from_components(db_idx, PkgIdx::from_usize(pkg_idx)))
+                })
+        })
+    }
 }
 
 pub type LoadResult = anyhow::Result<(PkgCache, Dbs)>;

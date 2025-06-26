@@ -250,7 +250,11 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
             ui.separator();
             if let Some(status) = &handler.exit_status {
                 ui.label(format!("Pacman exited ({status})"));
-                if ui.button("Close").clicked() {
+                if ui.button("Close").clicked()
+                    || ui.input(|inp| {
+                        inp.key_pressed(egui::Key::Enter) || inp.key_pressed(egui::Key::Escape)
+                    })
+                {
                     close_handler = true;
                     app.load_recv = crate::packages::spawn_load_thread();
                 }

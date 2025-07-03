@@ -51,7 +51,7 @@ impl TabViewer for TabViewState<'_, '_, '_> {
         match tab {
             Tab::LocalPkgList(state) => local_pkg_list::ui(ui, self.pkgs, dbs, self.ui, state),
             Tab::RemotePkgList(state) => remote_pkg_list::ui(ui, self.pkgs, dbs, self.ui, state),
-            Tab::UpgradeList(state) => upgrade_list::ui(ui, self.pkgs, dbs, self.ui, state),
+            Tab::UpgradeList(state) => upgrade_list::ui(ui, dbs, self.ui, state),
             Tab::Pkg(tab) => package::ui(ui, dbs, self.ui, tab),
             Tab::ColorTheme => color_theme::ui(ui, &mut self.ui.colorix),
             Tab::LoggerUi => egui_logger::logger_ui().show(ui),

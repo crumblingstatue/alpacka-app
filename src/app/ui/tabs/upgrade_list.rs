@@ -1,9 +1,8 @@
 use {
-    super::{PkgListState, remote_pkg_list::pkg_ver_cmp},
+    super::remote_pkg_list::pkg_ver_cmp,
     crate::{
         app::ui::{SharedUiState, cmd::Cmd, spawn_pacman_cmd_root_pkexec},
-        packages::{DbIdx, Dbs, PkgCache, PkgIdx, PkgRef},
-        query_syntax::PkgListQuery,
+        packages::{DbIdx, Dbs, PkgIdx, PkgRef},
     },
     eframe::egui,
     egui_extras::{Column, TableBody, TableBuilder},
@@ -11,7 +10,6 @@ use {
 
 #[derive(Default)]
 pub(in crate::app::ui) struct State {
-    pkg_list: PkgListState,
     pub(in crate::app::ui) force_close: bool,
     pub(in crate::app::ui) just_opened: bool = true,
     upgrade_list: Vec<Upgrade>,
@@ -22,41 +20,13 @@ struct Upgrade {
     remote: PkgRef,
 }
 
-pub fn ui(
-    ui: &mut egui::Ui,
-    pkgs: &mut PkgCache,
-    dbs: &Dbs,
-    ui_state: &mut SharedUiState,
-    tab_state: &mut State,
-) {
+pub fn ui(ui: &mut egui::Ui, dbs: &Dbs, ui_state: &mut SharedUiState, tab_state: &mut State) {
     if tab_state.just_opened {
         tab_state.upgrade_list = determine_upgrades(dbs);
         tab_state.just_opened = false;
     }
     egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
         ui.horizontal(|ui| {
-            if super::query_edit(ui, &mut tab_state.pkg_list.query_src).changed() {
-                tab_state.pkg_list.query = PkgListQuery::compile(&tab_state.pkg_list.query_src);
-                pkgs.filt_local_pkgs =
-                    dbs.local_pkgs()
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(i, pkg)| {
-                            let filt_lo = tab_state.pkg_list.query.string.to_ascii_lowercase();
-                            (pkg.desc.name.contains(&filt_lo)
-                                || pkg.desc.desc.as_ref().is_some_and(|desc| {
-                                    desc.to_ascii_lowercase().contains(&filt_lo)
-                                })
-                                || pkg
-                                    .desc
-                                    .provides
-                                    .iter()
-                                    .any(|dep| dep.name.contains(&filt_lo)))
-                            .then_some(PkgIdx::from_usize(i))
-                        })
-                        .collect();
-            }
-            ui.spacing();
             ui.label(format!("{} packages listed", tab_state.upgrade_list.len()));
             if ui
                 .add_enabled(

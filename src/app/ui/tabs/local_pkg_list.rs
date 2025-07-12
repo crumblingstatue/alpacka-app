@@ -100,7 +100,6 @@ fn table_body_ui(mut body: TableBody, pkgs: &PkgCache, dbs: &Dbs, ui_state: &mut
                 ui.label([ico::PKG, " ", pkg.desc.name.as_str()].concat());
                 ui.separator();
                 if ui.button([ico::TRASH, " Remove"].concat()).clicked() {
-                    ui.close_menu();
                     ui_state.cmd.push(Cmd::Rscn(pkg.desc.name.clone()));
                 }
                 match pkg.desc.install_reason {

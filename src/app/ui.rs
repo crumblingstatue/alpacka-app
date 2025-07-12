@@ -54,7 +54,6 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                 ui.separator();
                 ui.menu_button("⟳ Sync", |ui| {
                     if ui.button("🔁 Sync databases (pacman -Sy)").clicked() {
-                        ui.close_menu();
                         if let Err(e) =
                             spawn_pacman_cmd_root_pkexec(&mut app.ui.shared.pac_handler, &["-Sy"])
                         {
@@ -64,25 +63,21 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                         }
                     }
                     if ui.button("Upgrade list").clicked() {
-                        ui.close_menu();
                         app.ui
                             .dock_state
                             .push_to_focused_leaf(Tab::UpgradeList(upgrade_list::State::default()));
                     }
                     if ui.button("⟳ Refresh package list").clicked() {
-                        ui.close_menu();
                         app.load_recv = crate::packages::spawn_load_thread();
                     }
                 });
                 ui.menu_button("☰ Preferences", |ui| {
                     if ui.button("🎨 Color theme").clicked() {
-                        ui.close_menu();
                         app.ui.dock_state.push_to_first_leaf(Tab::ColorTheme);
                     }
                     match crate::config::cfg_dir() {
                         Some(dir) => {
                             if ui.button("Open config dir").clicked() {
-                                ui.close_menu();
                                 let _ = std::process::Command::new("xdg-open").arg(dir).status();
                             }
                         }
@@ -93,11 +88,9 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                 });
                 ui.menu_button("❓ Debug", |ui| {
                     if ui.button("Log").clicked() {
-                        ui.close_menu();
                         app.ui.dock_state.push_to_first_leaf(Tab::LoggerUi);
                     }
                     if ui.button("Error popup test").clicked() {
-                        ui.close_menu();
                         app.ui.shared.error_popup = Some("This is a test error popup".into());
                     }
                 });

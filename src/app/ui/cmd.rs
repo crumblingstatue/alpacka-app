@@ -5,7 +5,7 @@ use {
         packages::PkgRef,
     },
     eframe::egui,
-    egui_dock::{Node, NodeIndex, TabIndex},
+    egui_dock::{LeafNode, Node, NodeIndex, TabIndex},
 };
 
 #[derive(Default)]
@@ -35,7 +35,7 @@ pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {
                 for (node_idx, (surf_idx, node)) in
                     app.ui.dock_state.iter_all_nodes_mut().enumerate()
                 {
-                    if let Node::Leaf { tabs, active, .. } = node {
+                    if let Node::Leaf(LeafNode { tabs, active, .. }) = node {
                         for (tab_idx, tab) in tabs.iter_mut().enumerate() {
                             if let Tab::Pkg(pkg_tab) = tab
                                 && pkg_tab.id == id
@@ -53,7 +53,7 @@ pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {
                 if let Some(indices) = focus_indices {
                     app.ui.dock_state.set_focused_node_and_surface(indices);
                 } else {
-                    if let Some(Node::Leaf { tabs, active, .. }) = app
+                    if let Some(Node::Leaf(LeafNode { tabs, active, .. })) = app
                         .ui
                         .dock_state
                         .main_surface_mut()

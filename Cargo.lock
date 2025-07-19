@@ -216,7 +216,8 @@ dependencies = [
 [[package]]
 name = "ansi_term_buf"
 version = "0.1.0"
-source = "git+https://github.com/crumblingstatue/ansi_term_buf.git#13873ef3ae26c34e0a9ac0add2e8845c459a7215"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d602aead8e879e1a2ae75af799a569948bf7fe24e1655c69c1120beebd30ebd5"
 dependencies = [
  "log",
 ]

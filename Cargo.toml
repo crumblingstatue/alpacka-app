@@ -21,9 +21,7 @@ difference = "2"
 pty-process = { git = "https://github.com/crumblingstatue/pty-process.git", branch = "as-raw-fd-pty-ref" }
 ansi_term_buf = "0.1.0"
 nonblock = "0.2.0"
-#egui_logger = "0.7.0"
-egui_logger.git = "https://github.com/RegenJacob/egui_logger.git"
-egui_logger.rev = "696f2d1af99105810957d97efc1059e83e517ee5"
+egui_logger = "0.8.0"
 log = "0.4.27"
 
 [profile.release]

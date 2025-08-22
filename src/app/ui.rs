@@ -46,7 +46,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
     egui::TopBottomPanel::top("top_panel")
         .exact_height(26.0)
         .show(ctx, |ui| {
-            ui.horizontal(|ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 let (re, painter) =
                     ui.allocate_painter(egui::vec2(24.0, 24.0), egui::Sense::hover());
                 paint_util::draw_logo(&painter, re.rect.center(), 8.0);

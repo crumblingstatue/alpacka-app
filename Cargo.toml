@@ -7,14 +7,14 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 anyhow = "1.0.95"
 dirs = "6.0.0"
-eframe.version = "0.32.0"
+eframe.version = "0.33"
 eframe.default-features = false
 eframe.features = ["default_fonts", "glow", "wayland", "x11"]
-egui_colors = "0.9"
-egui_dock = "0.17.0"
-egui_extras = "0.32.0"
+egui_colors = "0.10"
+egui_dock = "0.18"
+egui_extras = "0.33"
 humansize = "2.1.3"
-ron = "0.10"
+ron = "0.12"
 serde.version = "1"
 serde.features = ["derive"]
 smol_str = "0.3.2"
@@ -23,7 +23,7 @@ difference = "2"
 pty-process = { git = "https://github.com/crumblingstatue/pty-process.git", branch = "as-raw-fd-pty-ref" }
 ansi_term_buf = "0.1.0"
 nonblock = "0.2.0"
-egui_logger = "0.8.0"
+egui_logger = "0.9.0"
 log = "0.4.27"
 
 [profile.release]

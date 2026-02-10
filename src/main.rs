@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-#![feature(array_windows, default_field_values)]
+#![feature(default_field_values)]
 #![warn(
     clippy::pedantic,
     clippy::unwrap_used,

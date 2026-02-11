@@ -12,14 +12,26 @@ use {
     },
 };
 
-#[derive(Default)]
 pub(in crate::app::ui) struct State {
     pub(in crate::app::ui) force_close: bool,
-    pub(in crate::app::ui) just_opened: bool = true,
+    pub(in crate::app::ui) just_opened: bool,
     upgrade_list: Vec<Upgrade>,
     filtered_list: Vec<Upgrade>,
     upgrade_list_recv: Option<Receiver<Vec<Upgrade>>>,
     filter_string: String,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            force_close: Default::default(),
+            just_opened: true,
+            upgrade_list: Vec::new(),
+            filtered_list: Vec::new(),
+            upgrade_list_recv: None,
+            filter_string: String::new(),
+        }
+    }
 }
 
 #[derive(Clone)]

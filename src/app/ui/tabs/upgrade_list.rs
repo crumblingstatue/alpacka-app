@@ -17,9 +17,12 @@ pub(in crate::app::ui) struct State {
     pub(in crate::app::ui) force_close: bool,
     pub(in crate::app::ui) just_opened: bool = true,
     upgrade_list: Vec<Upgrade>,
+    filtered_list: Vec<Upgrade>,
     upgrade_list_recv: Option<Receiver<Vec<Upgrade>>>,
+    filter_string: String,
 }
 
+#[derive(Clone)]
 struct Upgrade {
     local: PkgIdx,
     remote: PkgRef,
@@ -45,10 +48,40 @@ pub fn ui(ui: &mut egui::Ui, dbs: &Arc<Dbs>, ui_state: &mut SharedUiState, tab_s
                 ui.label("Computing upgrade list...");
                 if let Ok(list) = recv.try_recv() {
                     tab_state.upgrade_list = list;
+                    tab_state.filtered_list.clone_from(&tab_state.upgrade_list);
                     tab_state.upgrade_list_recv = None;
                 }
             }
-            ui.label(format!("{} packages listed", tab_state.upgrade_list.len()));
+            ui.label(format!("{} packages listed", tab_state.filtered_list.len()));
+            if ui
+                .add(
+                    egui::TextEdit::singleline(&mut tab_state.filter_string)
+                        .hint_text("🔍 Filter (ctrl+f)"),
+                )
+                .changed()
+            {
+                if tab_state.filter_string.trim().is_empty() {
+                    tab_state.filtered_list.clone_from(&tab_state.upgrade_list);
+                } else {
+                    let filter_lo = tab_state.filter_string.trim().to_ascii_lowercase();
+                    tab_state.filtered_list = tab_state
+                        .upgrade_list
+                        .iter()
+                        .filter(|upg| {
+                            let Some(local) = dbs.resolve_local(upg.local) else {
+                                // This shouldn't happen, but I guess to make this bug visible if it happens,
+                                // we keep the package
+                                return true;
+                            };
+                            local.desc.name.to_ascii_lowercase().contains(&filter_lo)
+                                || local.desc.desc.as_ref().is_some_and(|desc| {
+                                    desc.to_ascii_lowercase().contains(&filter_lo)
+                                })
+                        })
+                        .cloned()
+                        .collect();
+                }
+            }
             if ui
                 .add_enabled(
                     ui_state.pac_handler.is_none(),
@@ -99,8 +132,8 @@ fn table_body_ui(
 ) {
     {
         body.ui_mut().style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-        body.rows(22.0, tab_state.upgrade_list.len(), |mut row| {
-            let Some(upg) = &tab_state.upgrade_list.get(row.index()) else {
+        body.rows(22.0, tab_state.filtered_list.len(), |mut row| {
+            let Some(upg) = &tab_state.filtered_list.get(row.index()) else {
                 row.col(|ui| {
                     ui.label("<unresolved upgrade>");
                 });

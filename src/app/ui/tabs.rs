@@ -8,6 +8,7 @@ use {
     eframe::egui,
     egui_dock::TabViewer,
     package::PkgTab,
+    std::sync::Arc,
 };
 
 mod color_theme;
@@ -18,7 +19,7 @@ pub mod upgrade_list;
 
 pub struct TabViewState<'pkgs, 'dbs, 'ui> {
     pub pkgs: &'pkgs mut PkgCache,
-    pub dbs: Option<&'dbs Dbs>,
+    pub dbs: Option<&'dbs Arc<Dbs>>,
     pub ui: &'ui mut SharedUiState,
 }
 

@@ -6,6 +6,10 @@ use {
     },
     eframe::egui,
     egui_extras::{Column, TableBody, TableBuilder},
+    std::{
+        sync::{Arc, mpsc::Receiver},
+        thread,
+    },
 };
 
 #[derive(Default)]
@@ -13,6 +17,7 @@ pub(in crate::app::ui) struct State {
     pub(in crate::app::ui) force_close: bool,
     pub(in crate::app::ui) just_opened: bool = true,
     upgrade_list: Vec<Upgrade>,
+    upgrade_list_recv: Option<Receiver<Vec<Upgrade>>>,
 }
 
 struct Upgrade {
@@ -20,13 +25,29 @@ struct Upgrade {
     remote: PkgRef,
 }
 
-pub fn ui(ui: &mut egui::Ui, dbs: &Dbs, ui_state: &mut SharedUiState, tab_state: &mut State) {
+pub fn ui(ui: &mut egui::Ui, dbs: &Arc<Dbs>, ui_state: &mut SharedUiState, tab_state: &mut State) {
     if tab_state.just_opened {
-        tab_state.upgrade_list = determine_upgrades(dbs);
+        let dbs = dbs.clone();
+        let (send, recv) = std::sync::mpsc::channel();
+        tab_state.upgrade_list_recv = Some(recv);
+        thread::spawn(move || {
+            let upgrades = determine_upgrades(&dbs);
+            if let Err(e) = send.send(upgrades) {
+                eprintln!("Failed to send upgrades: {e}");
+            }
+        });
         tab_state.just_opened = false;
     }
     egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
         ui.horizontal(|ui| {
+            if let Some(recv) = &tab_state.upgrade_list_recv {
+                ui.spinner();
+                ui.label("Computing upgrade list...");
+                if let Ok(list) = recv.try_recv() {
+                    tab_state.upgrade_list = list;
+                    tab_state.upgrade_list_recv = None;
+                }
+            }
             ui.label(format!("{} packages listed", tab_state.upgrade_list.len()));
             if ui
                 .add_enabled(

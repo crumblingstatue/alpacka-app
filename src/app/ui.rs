@@ -10,7 +10,7 @@ use {
     std::{
         io::Write,
         process::{Child, ExitStatus},
-        sync::mpsc::TryRecvError,
+        sync::{Arc, mpsc::TryRecvError},
     },
     tabs::{Tab, TabViewState, upgrade_list},
 };
@@ -99,7 +99,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
                         Ok(result) => match result {
                             Ok((pkgs, dbs)) => {
                                 app.pkgs = pkgs;
-                                app.dbs = Some(dbs);
+                                app.dbs = Some(Arc::new(dbs));
                                 if app.open_upgrade_window {
                                     app.ui.dock_state.push_to_focused_leaf(Tab::UpgradeList(
                                         upgrade_list::State::default(),

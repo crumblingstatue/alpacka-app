@@ -6,12 +6,13 @@ use {
         packages::{Dbs, LoadRecv, PkgCache},
     },
     egui_colors::{Colorix, tokens::ThemeColor},
+    std::sync::Arc,
     ui::UiState,
 };
 
 pub struct AlpackaApp {
     pkgs: PkgCache,
-    dbs: Option<Dbs>,
+    dbs: Option<Arc<Dbs>>,
     ui: UiState,
     cfg: Config,
     load_recv: LoadRecv,

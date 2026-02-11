@@ -36,7 +36,7 @@ pub fn ui(ui: &mut egui::Ui, dbs: &Arc<Dbs>, ui_state: &mut SharedUiState, tab_s
         thread::spawn(move || {
             let upgrades = determine_upgrades(&dbs);
             if let Err(e) = send.send(upgrades) {
-                eprintln!("Failed to send upgrades: {e}");
+                log::error!("Failed to send upgrades: {e}");
             }
         });
         tab_state.just_opened = false;

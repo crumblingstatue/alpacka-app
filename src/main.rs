@@ -6,9 +6,9 @@
     clippy::indexing_slicing,
     clippy::string_slice,
     clippy::suboptimal_flops,
-    clippy::missing_const_for_fn,
     unused_qualifications
 )]
+#![allow(clippy::collapsible_if)]
 
 use {
     app::AlpackaApp,

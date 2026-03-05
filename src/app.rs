@@ -5,6 +5,7 @@ use {
         config::Config,
         packages::{Dbs, LoadRecv, PkgCache},
     },
+    eframe::egui,
     egui_colors::{Colorix, tokens::ThemeColor},
     std::sync::Arc,
     ui::UiState,
@@ -30,7 +31,7 @@ impl AlpackaApp {
             open_upgrade_window: false,
         }
     }
-    pub fn sync_from_config(&mut self, egui_ctx: &eframe::egui::Context) {
+    pub fn sync_from_config(&mut self, egui_ctx: &egui::Context) {
         if let Some(color_theme) = &self.cfg.color_theme {
             self.ui.shared.colorix = Some(Colorix::global(
                 egui_ctx,
@@ -49,11 +50,16 @@ impl AlpackaApp {
 }
 
 impl eframe::App for AlpackaApp {
-    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ui::top_panel_ui(self, ctx);
         ui::central_panel_ui(self, ctx);
         ui::cmd::process_cmds(self, ctx);
         ui::modals(self, ctx);
+        if ctx.input(|i| i.viewport().close_requested()) {
+            if self.ui.is_pacman_running() {
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            }
+        }
     }
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.sync_to_config();

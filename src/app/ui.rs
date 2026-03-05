@@ -42,6 +42,12 @@ impl Default for UiState {
     }
 }
 
+impl UiState {
+    pub fn is_pacman_running(&self) -> bool {
+        self.shared.pac_handler.is_some()
+    }
+}
+
 pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
     egui::TopBottomPanel::top("top_panel")
         .exact_height(26.0)

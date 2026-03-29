@@ -51,7 +51,7 @@ pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {
                 // For now, we just push to the last leaf node, and hope that's good enough.
                 #[expect(clippy::collapsible_else_if)]
                 if let Some(indices) = focus_indices {
-                    app.ui.dock_state.set_focused_node_and_surface(indices);
+                    app.ui.dock_state.set_focused_node_and_surface(indices.0);
                 } else {
                     if let Some(Node::Leaf(LeafNode { tabs, active, .. })) = app
                         .ui

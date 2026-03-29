@@ -18,7 +18,7 @@ pub fn ui(
     ui_state: &mut SharedUiState,
     tab_state: &mut PkgListState,
 ) {
-    egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
+    egui::Panel::top("top_panel_2").show_inside(ui, |ui| {
         top_panel_ui(pkgs, dbs, tab_state, ui);
     });
     pkg_list_table_builder(ui)

@@ -53,7 +53,7 @@ pub fn ui(ui: &mut egui::Ui, dbs: &Arc<Dbs>, ui_state: &mut SharedUiState, tab_s
         });
         tab_state.just_opened = false;
     }
-    egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
+    egui::Panel::top("top_panel_2").show_inside(ui, |ui| {
         ui.horizontal(|ui| {
             if let Some(recv) = &tab_state.upgrade_list_recv {
                 ui.spinner();

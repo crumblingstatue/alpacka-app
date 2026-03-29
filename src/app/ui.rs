@@ -48,10 +48,10 @@ impl UiState {
     }
 }
 
-pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
-    egui::TopBottomPanel::top("top_panel")
-        .exact_height(26.0)
-        .show(ctx, |ui| {
+pub fn top_panel_ui(app: &mut AlpackaApp, ui: &mut egui::Ui) {
+    egui::Panel::top("top_panel")
+        .exact_size(26.0)
+        .show_inside(ui, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
                 let (re, painter) =
                     ui.allocate_painter(egui::vec2(24.0, 24.0), egui::Sense::hover());
@@ -133,12 +133,12 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
         });
 }
 
-pub fn central_panel_ui(app: &mut AlpackaApp, ctx: &egui::Context) {
+pub fn central_panel_ui(app: &mut AlpackaApp, ui: &mut egui::Ui) {
     DockArea::new(&mut app.ui.dock_state)
         .show_leaf_collapse_buttons(false)
         .show_leaf_close_all_buttons(false)
-        .show(
-            ctx,
+        .show_inside(
+            ui,
             &mut TabViewState {
                 pkgs: &mut app.pkgs,
                 dbs: app.dbs.as_ref(),
@@ -217,7 +217,7 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
         egui::Modal::new(egui::Id::new("pacman output modal")).show(ctx, |ui| {
             ui.heading("Pacman output");
             ui.separator();
-            let avail_rect = ui.ctx().available_rect();
+            let avail_rect = ui.ctx().content_rect();
             let w = (avail_rect.width() * 0.5).round();
             ui.set_width(w);
             egui::ScrollArea::both()

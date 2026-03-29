@@ -7,7 +7,7 @@ pub fn ui(ui: &mut egui::Ui, opt_colorix: &mut Option<Colorix>) {
     match opt_colorix {
         Some(colorix) => {
             if ui.button("Deactivate custom colors").clicked() {
-                ui.ctx().style_mut(|style| {
+                ui.ctx().global_style_mut(|style| {
                     *style = egui::Style::default();
                 });
                 *opt_colorix = None;

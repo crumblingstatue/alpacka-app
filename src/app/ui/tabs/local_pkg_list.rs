@@ -19,7 +19,7 @@ pub fn ui(
     ui_state: &mut SharedUiState,
     tab_state: &mut PkgListState,
 ) {
-    egui::TopBottomPanel::top("top_panel").show_inside(ui, |ui| {
+    egui::Panel::top("top_panel_2").show_inside(ui, |ui| {
         ui.horizontal(|ui| {
             if super::query_edit(ui, &mut tab_state.query_src).changed() {
                 tab_state.query = PkgListQuery::compile(&tab_state.query_src);

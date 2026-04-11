@@ -29,7 +29,7 @@ pub(super) struct UiState {
 pub struct SharedUiState {
     cmd: CmdBuf,
     pub colorix: Option<Colorix>,
-    pac_handler: Option<PacChildHandler>,
+    pub pac_handler: Option<PacChildHandler>,
     pub error_popup: Option<String>,
 }
 
@@ -147,7 +147,7 @@ pub fn central_panel_ui(app: &mut AlpackaApp, ui: &mut egui::Ui) {
         );
 }
 
-struct PacChildHandler {
+pub struct PacChildHandler {
     child: Child,
     pty: Pty,
     term: Term,
@@ -165,7 +165,7 @@ impl PacChildHandler {
             input_buf: String::new(),
         }
     }
-    fn update(&mut self) {
+    pub fn update(&mut self, ctx: &egui::Context) {
         if self.exit_status.is_some() {
             return;
         }
@@ -194,6 +194,8 @@ impl PacChildHandler {
                 log::error!("Error waiting for pacman: {e}");
             }
         }
+        // Required to keep "polling" the output of pacman
+        ctx.request_repaint();
     }
 }
 
@@ -212,7 +214,6 @@ fn spawn_pacman_cmd_root_pkexec(
 pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
     let mut close_handler = false;
     if let Some(handler) = &mut app.ui.shared.pac_handler {
-        handler.update();
         let out = handler.term.contents_to_string();
         egui::Modal::new(egui::Id::new("pacman output modal")).show(ctx, |ui| {
             ui.heading("Pacman output");

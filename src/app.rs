@@ -61,6 +61,11 @@ impl eframe::App for AlpackaApp {
             }
         }
     }
+    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if let Some(handler) = &mut self.ui.shared.pac_handler {
+            handler.update(ctx);
+        }
+    }
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.sync_to_config();
         if let Err(e) = self.cfg.save() {

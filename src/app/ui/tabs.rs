@@ -31,7 +31,7 @@ impl TabViewer for TabViewState<'_, '_, '_> {
             return "<dbs not loaded>".into();
         };
         match tab {
-            Tab::LocalPkgList(_) => format!("Local packages ({})", dbs.local_pkgs().len(),).into(),
+            Tab::LocalPkgList(_) => format!("Local packages ({})", dbs.local_pkgs().len()).into(),
             Tab::RemotePkgList(_) => format!(
                 "Remote packages ({})",
                 dbs.remotes().map(|(_, db)| db.pkgs.len()).sum::<usize>()

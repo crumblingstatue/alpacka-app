@@ -51,7 +51,7 @@ impl UiState {
 pub fn top_panel_ui(app: &mut AlpackaApp, ui: &mut egui::Ui) {
     egui::Panel::top("top_panel")
         .exact_size(26.0)
-        .show_inside(ui, |ui| {
+        .show(ui, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
                 let (re, painter) =
                     ui.allocate_painter(egui::vec2(24.0, 24.0), egui::Sense::hover());

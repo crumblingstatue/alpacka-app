@@ -215,9 +215,7 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
     let mut close_handler = false;
     if let Some(handler) = &mut app.ui.shared.pac_handler {
         let out = handler.term.contents_to_string();
-        egui::Modal::new(egui::Id::new("pacman output modal")).show(ctx, |ui| {
-            ui.heading("Pacman output");
-            ui.separator();
+        egui::Window::new("pacman").show(ctx, |ui| {
             let avail_rect = ui.ctx().content_rect();
             let w = (avail_rect.width() * 0.5).round();
             ui.set_width(w);

@@ -74,6 +74,10 @@ impl TabViewer for TabViewState<'_, '_, '_> {
             Tab::Pkg(pkg_tab) => pkg_tab.force_close,
         }
     }
+
+    fn id(&mut self, tab: &mut Self::Tab) -> egui::Id {
+        egui::Id::new(self.title(tab).text())
+    }
 }
 
 pub enum Tab {

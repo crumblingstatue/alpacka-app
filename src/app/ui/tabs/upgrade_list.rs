@@ -134,6 +134,7 @@ fn remote_pkg_list_table_builder(ui: &'_ mut egui::Ui) -> TableBuilder<'_> {
         .auto_shrink(false)
         .striped(true)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .drag_to_scroll(egui::scroll_area::DragScroll::Always)
 }
 
 fn table_body_ui(

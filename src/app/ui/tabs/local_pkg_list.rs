@@ -143,5 +143,6 @@ pub fn pkg_list_table_builder(ui: &'_ mut egui::Ui) -> TableBuilder<'_> {
         .column(Column::remainder())
         .auto_shrink(false)
         .striped(true)
+        .drag_to_scroll(egui::scroll_area::DragScroll::Always)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
 }

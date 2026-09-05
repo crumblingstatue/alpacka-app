@@ -247,7 +247,12 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
             }
             ui.separator();
             if let Some(status) = &handler.exit_status {
-                ui.label(format!("Pacman exited ({status})"));
+                let label_color = if status.success() {
+                    egui::Color32::GREEN
+                } else {
+                    egui::Color32::RED
+                };
+                ui.colored_label(label_color, format!("Pacman exited with {status}"));
                 if ui.button("Close").clicked()
                     || ui.input(|inp| {
                         inp.key_pressed(egui::Key::Enter) || inp.key_pressed(egui::Key::Escape)

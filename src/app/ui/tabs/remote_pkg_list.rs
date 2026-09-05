@@ -164,16 +164,17 @@ impl RemoteLocalCmp {
     }
 }
 
+/// Also returns whether the package is installed
 pub fn installed_label_for_remote_pkg(
     ui: &mut egui::Ui,
     ui_state: &mut SharedUiState,
     remote: &PkgDesc,
     dbs: &Dbs,
-) {
+) -> bool {
     if let Some((local_idx, cmp)) = remote_local_cmp(remote, dbs.local_pkgs()) {
         let Some(local_pkg) = dbs.resolve_local(local_idx) else {
             ui.label("[unresolved]");
-            return;
+            return false;
         };
         let re = match cmp {
             RemoteLocalCmp::Older => ui
@@ -224,5 +225,7 @@ pub fn installed_label_for_remote_pkg(
         if re.clicked() {
             ui_state.cmd.push(Cmd::OpenPkgTab(PkgRef::local(local_idx)));
         }
+        return true;
     }
+    false
 }

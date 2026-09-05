@@ -3,7 +3,7 @@ use {
     crate::{
         app::{
             PkgCache,
-            ui::{SharedUiState, cmd::Cmd},
+            ui::{SharedUiState, cmd::Cmd, ico},
         },
         packages::{Dbs, PkgIdx, PkgRef},
     },
@@ -59,9 +59,15 @@ pub fn ui(
                 row.col(|ui| {
                     ui.horizontal(|ui| {
                         let db_name = &db.name;
-                        if ui.link(format!("{db_name}/{}", pkg.desc.name)).clicked() {
+                        let re = ui.link(format!("{db_name}/{}", pkg.desc.name));
+                        if re.clicked() {
                             ui_state.cmd.push(Cmd::OpenPkgTab(*pkg_ref));
                         }
+                        re.context_menu(|ui| {
+                            if ui.button([ico::PKG, " Install"].concat()).clicked() {
+                                ui_state.cmd.push(Cmd::InstallFromRemote(*pkg_ref));
+                            }
+                        });
                         installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, dbs);
                     });
                 });

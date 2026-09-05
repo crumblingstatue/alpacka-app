@@ -24,6 +24,7 @@ pub enum Cmd {
     Rscn(smol_str::SmolStr),
     AsDep(smol_str::SmolStr),
     AsExplicit(smol_str::SmolStr),
+    InstallFromRemote(PkgRef),
 }
 
 pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {
@@ -66,6 +67,26 @@ pub fn process_cmds(app: &mut AlpackaApp, _ctx: &egui::Context) {
                         app.ui
                             .dock_state
                             .push_to_first_leaf(Tab::Pkg(PkgTab::new(id)));
+                    }
+                }
+            }
+            Cmd::InstallFromRemote(id) => {
+                let Some(dbs) = app.dbs.as_ref() else {
+                    log::error!("[install] Databases inaccessible");
+                    return;
+                };
+                match dbs.resolve(id) {
+                    (Some(db), Some(pkg)) => {
+                        let pkg_name = format!("{}/{}", db.name, pkg.desc.name);
+                        if let Err(e) = spawn_pacman_cmd_root_pkexec(
+                            &mut app.ui.shared.pac_handler,
+                            &["-S", pkg_name.as_str()],
+                        ) {
+                            app.ui.shared.error_popup = Some(e.to_string());
+                        }
+                    }
+                    _ => {
+                        log::error!("[install] Failed to resolve package");
                     }
                 }
             }

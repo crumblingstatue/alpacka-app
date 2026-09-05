@@ -85,14 +85,17 @@ fn pkg_ui(ui: &mut egui::Ui, ui_state: &mut SharedUiState, pkg_tab: &mut PkgTab,
         ui.label(pkg.desc.version.as_str());
         if remote {
             let installed = installed_label_for_remote_pkg(ui, ui_state, &pkg.desc, dbs);
-            if installed
-                && ui
+            if installed {
+                if ui
                     .button([ico::TRASH, " Remove (-Rscn)"].concat())
                     .clicked()
-            {
-                ui_state.cmd.push(Cmd::Rscn(pkg.desc.name.clone()));
-            } else if ui.button([ico::PKG, " Install"].concat()).clicked() {
-                ui_state.cmd.push(Cmd::InstallFromRemote(pkg_tab.id));
+                {
+                    ui_state.cmd.push(Cmd::Rscn(pkg.desc.name.clone()));
+                }
+            } else {
+                if ui.button([ico::PKG, " Install"].concat()).clicked() {
+                    ui_state.cmd.push(Cmd::InstallFromRemote(pkg_tab.id));
+                }
             }
         } else if ui
             .button([ico::TRASH, " Remove (-Rscn)"].concat())

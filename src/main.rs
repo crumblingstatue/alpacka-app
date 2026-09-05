@@ -8,7 +8,8 @@
     clippy::suboptimal_flops,
     unused_qualifications
 )]
-#![allow(clippy::collapsible_if)]
+// These lints actively lead me to writing buggy code
+#![allow(clippy::collapsible_if, clippy::collapsible_else_if)]
 
 use {
     app::AlpackaApp,

@@ -203,6 +203,11 @@ fn spawn_pacman_cmd_root_pkexec(
     pac_handler: &mut Option<PacChildHandler>,
     args: &[&str],
 ) -> anyhow::Result<()> {
+    // IMPORTANT: Don't let us drop an existing pacman process, which could be in the middle
+    // of writing to disk, and interrupting it could be catastrophic.
+    if pac_handler.is_some() {
+        anyhow::bail!("pacman is already running.");
+    }
     let (pty, the_pts) = pty_process::blocking::open()?;
     let child = PtyCommand::new("pkexec")
         .args([["pacman"].as_slice(), args].concat())

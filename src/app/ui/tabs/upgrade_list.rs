@@ -56,17 +56,27 @@ pub fn ui(ui: &mut egui::Ui, dbs: &Arc<Dbs>, ui_state: &mut SharedUiState, tab_s
         });
         tab_state.just_opened = false;
     }
+    if let Some(recv) = &tab_state.upgrade_list_recv {
+        ui.horizontal(|ui| {
+            ui.spinner();
+            ui.label("Computing upgrade list...");
+        });
+        if let Ok(list) = recv.try_recv() {
+            tab_state.upgrade_list = list;
+            tab_state.filtered_list.clone_from(&tab_state.upgrade_list);
+            tab_state.upgrade_list_recv = None;
+        }
+        return;
+    }
+    if tab_state.upgrade_list.is_empty() {
+        ui.label("No upgrades.");
+        if ui.button("Close").clicked() {
+            tab_state.force_close = true;
+        }
+        return;
+    }
     egui::Panel::top("top_panel_2").show(ui, |ui| {
         ui.horizontal(|ui| {
-            if let Some(recv) = &tab_state.upgrade_list_recv {
-                ui.spinner();
-                ui.label("Computing upgrade list...");
-                if let Ok(list) = recv.try_recv() {
-                    tab_state.upgrade_list = list;
-                    tab_state.filtered_list.clone_from(&tab_state.upgrade_list);
-                    tab_state.upgrade_list_recv = None;
-                }
-            }
             ui.label(format!("{} packages listed", tab_state.filtered_list.len()));
             if ui
                 .add(

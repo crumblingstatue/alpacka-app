@@ -6,6 +6,7 @@ use {
     },
     eframe::egui,
     egui_extras::{Column, TableBody, TableBuilder},
+    smol_str::SmolStr,
     std::{
         sync::{Arc, mpsc::Receiver},
         thread,
@@ -38,6 +39,8 @@ impl Default for State {
 struct Upgrade {
     local: PkgIdx,
     remote: PkgRef,
+    /// This is stored so the upgrade list can show the old version even after a system upgrade
+    old_ver: SmolStr,
 }
 
 pub fn ui(ui: &mut egui::Ui, dbs: &Arc<Dbs>, ui_state: &mut SharedUiState, tab_state: &mut State) {
@@ -178,7 +181,7 @@ fn table_body_ui(
                 }
             });
             row.col(|ui| {
-                ui.label(ver_layout_job(local, remote_pkg));
+                ui.label(ver_layout_job(&upg.old_ver, &remote_pkg.desc.version));
             });
             row.col(|ui| {
                 ui.label(
@@ -193,13 +196,9 @@ fn table_body_ui(
     }
 }
 
-fn ver_layout_job(local: &alpacka::Pkg, remote: &alpacka::Pkg) -> egui::text::LayoutJob {
+fn ver_layout_job(local: &SmolStr, remote: &SmolStr) -> egui::text::LayoutJob {
     let size = 12.0;
-    let diff = difference::Changeset::new(
-        local.desc.version.as_str(),
-        remote.desc.version.as_str(),
-        "",
-    );
+    let diff = difference::Changeset::new(local.as_str(), remote.as_str(), "");
     let mut lj = egui::text::LayoutJob::default();
     for change in &diff.diffs {
         match change {
@@ -260,6 +259,7 @@ fn determine_upgrades(dbs: &Dbs) -> Vec<Upgrade> {
                             DbIdx::from_usize(di + 1),
                             PkgIdx::from_usize(ri),
                         ),
+                        old_ver: local.desc.version.clone(),
                     });
                 }
             }

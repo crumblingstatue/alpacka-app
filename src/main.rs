@@ -35,6 +35,9 @@ fn main() {
         Box::new(move |cc| {
             cc.egui_ctx
                 .send_viewport_cmd(ViewportCommand::Maximized(true));
+            cc.egui_ctx.add_font_provider(std::sync::Arc::new(
+                egui_system_font_frog::SystemFontProvider::new(),
+            ));
             app.sync_from_config(&cc.egui_ctx);
             Ok(Box::new(app))
         }),

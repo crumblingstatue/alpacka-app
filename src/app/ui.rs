@@ -58,7 +58,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ui: &mut egui::Ui) {
                 paint_util::draw_logo(&painter, re.rect.center(), 8.0);
                 ui.label("Alpacka");
                 ui.separator();
-                ui.menu_button("⟳ Sync", |ui| {
+                ui.menu_button("🔄 Sync", |ui| {
                     if ui.button("🔁 Sync databases (pacman -Sy)").clicked() {
                         if let Err(e) =
                             spawn_pacman_cmd_root_pkexec(&mut app.ui.shared.pac_handler, &["-Sy"])
@@ -73,7 +73,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ui: &mut egui::Ui) {
                             .dock_state
                             .push_to_focused_leaf(Tab::UpgradeList(upgrade_list::State::default()));
                     }
-                    if ui.button("⟳ Refresh package list").clicked() {
+                    if ui.button("🔄 Refresh package list").clicked() {
                         app.load_recv = crate::packages::spawn_load_thread();
                     }
                 });
@@ -274,7 +274,7 @@ pub fn modals(app: &mut AlpackaApp, ctx: &egui::Context) {
     }
     if let Some(err) = &app.ui.shared.error_popup {
         let mut close = false;
-        egui::Modal::new("error_modal".into()).show(ctx, |ui| {
+        egui::Modal::new(egui::Id::unique("error_modal")).show(ctx, |ui| {
             ui.heading("Error");
             ui.separator();
             ui.label(err);

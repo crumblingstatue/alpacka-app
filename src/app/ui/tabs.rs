@@ -76,7 +76,7 @@ impl TabViewer for TabViewState<'_, '_, '_> {
     }
 
     fn id(&mut self, tab: &mut Self::Tab) -> egui::Id {
-        egui::Id::new(self.title(tab).text())
+        egui::Id::unique(self.title(tab).text())
     }
 }
 

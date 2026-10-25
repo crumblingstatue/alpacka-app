@@ -21,12 +21,12 @@ pub struct AlpackaApp {
 }
 
 impl AlpackaApp {
-    pub fn new() -> Self {
+    pub fn new(cfg: Config) -> Self {
         Self {
             pkgs: PkgCache::default(),
             dbs: None,
             ui: UiState::default(),
-            cfg: Config::load_or_default(),
+            cfg,
             load_recv: crate::packages::spawn_load_thread(),
             open_upgrade_window: false,
         }
@@ -60,6 +60,9 @@ impl eframe::App for AlpackaApp {
                 ui.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             }
         }
+        // Unfortunately since `on_exit` doesn't take &egui::Context,
+        // we need to sync from Context here. Shouldn't be too expensive though.
+        self.cfg.zoom_factor = ui.zoom_factor();
     }
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if let Some(handler) = &mut self.ui.shared.pac_handler {

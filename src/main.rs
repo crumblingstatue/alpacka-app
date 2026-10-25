@@ -12,6 +12,7 @@
 #![allow(clippy::collapsible_if, clippy::collapsible_else_if)]
 
 use {
+    crate::config::Config,
     app::AlpackaApp,
     eframe::{NativeOptions, egui::ViewportCommand},
 };
@@ -28,11 +29,13 @@ fn main() {
         eprintln!("Fatal error. Failed to initialize logger: {e}");
         return;
     }
-    let mut app = AlpackaApp::new();
     if let Err(e) = eframe::run_native(
         "alpacka",
         NativeOptions::default(),
         Box::new(move |cc| {
+            let cfg = Config::load_or_default();
+            cc.egui_ctx.set_zoom_factor(cfg.zoom_factor);
+            let mut app = AlpackaApp::new(cfg);
             cc.egui_ctx
                 .send_viewport_cmd(ViewportCommand::Maximized(true));
             cc.egui_ctx.add_font_provider(std::sync::Arc::new(

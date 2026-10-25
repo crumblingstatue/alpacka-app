@@ -9,9 +9,24 @@ pub fn cfg_dir() -> Option<PathBuf> {
     dirs::config_dir().map(|cfg_dir| cfg_dir.join("alpacka"))
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct Config {
     pub color_theme: Option<[Rgb; 12]>,
+    #[serde(default = "default_zoom_factor")]
+    pub zoom_factor: f32,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            color_theme: None,
+            zoom_factor: default_zoom_factor(),
+        }
+    }
+}
+
+fn default_zoom_factor() -> f32 {
+    1.0
 }
 
 impl Config {

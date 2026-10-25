@@ -81,6 +81,9 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ui: &mut egui::Ui) {
                     if ui.button("🎨 Color theme").clicked() {
                         app.ui.dock_state.push_to_first_leaf(Tab::ColorTheme);
                     }
+                    ui.separator();
+                    egui::gui_zoom::zoom_menu_buttons(ui);
+                    ui.separator();
                     match crate::config::cfg_dir() {
                         Some(dir) => {
                             if ui.button("Open config dir").clicked() {

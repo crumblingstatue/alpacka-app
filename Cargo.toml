@@ -25,7 +25,8 @@ difference = "2"
 pty-process = { git = "https://github.com/crumblingstatue/pty-process.git", branch = "as-raw-fd-pty-ref" }
 ansi_term_buf = "0.1.0"
 nonblock = "0.2.0"
-egui_logger = "0.13"
+egui_logger.git = "https://github.com/crumblingstatue/egui_logger.git"
+egui_logger.branch = "fix-deadlock"
 log = "0.4.27"
 egui_system_font_frog.git = "https://github.com/crumblingstatue/egui_system_font_frog.git"
 

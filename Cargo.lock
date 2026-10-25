@@ -705,8 +705,7 @@ dependencies = [
 [[package]]
 name = "egui_logger"
 version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af5662fdd26cf22ce7fba32c0f1fd052e4fc963fbbe22bd1e851558f5635e13c"
+source = "git+https://github.com/crumblingstatue/egui_logger.git?branch=fix-deadlock#7badac20edce381186f584c8a0c2a9140958b115"
 dependencies = [
  "chrono",
  "egui",

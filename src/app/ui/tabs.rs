@@ -37,7 +37,7 @@ impl TabViewer for TabViewState<'_, '_, '_> {
                 dbs.remotes().map(|(_, db)| db.pkgs.len()).sum::<usize>()
             )
             .into(),
-            Tab::UpgradeList(_) => "Upgrade list".into(),
+            Tab::UpgradeList(_) => "✨ Upgrade list".into(),
             Tab::Pkg(pkg) => format!("{} {}", ico::PKG, pkg.id.display(dbs)).into(),
             Tab::ColorTheme => "🎨 Color theme".into(),
             Tab::LoggerUi => "Log".into(),

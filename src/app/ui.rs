@@ -68,7 +68,7 @@ pub fn top_panel_ui(app: &mut AlpackaApp, ui: &mut egui::Ui) {
                             app.open_upgrade_window = true;
                         }
                     }
-                    if ui.button("Upgrade list").clicked() {
+                    if ui.button("✨ Upgrade list").clicked() {
                         app.ui
                             .dock_state
                             .push_to_focused_leaf(Tab::UpgradeList(upgrade_list::State::default()));

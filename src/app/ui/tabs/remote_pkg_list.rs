@@ -3,7 +3,7 @@ use {
     crate::{
         app::{
             PkgCache,
-            ui::{SharedUiState, cmd::Cmd, ico},
+            ui::{SharedUiState, cmd::Cmd, ico, tabs::PkgExt as _},
         },
         packages::{Dbs, PkgIdx, PkgRef},
     },
@@ -110,13 +110,8 @@ fn top_panel_ui(pkgs: &mut PkgCache, dbs: &Dbs, tab_state: &mut PkgListState, ui
                     if flags.any() {
                         return None;
                     }
-                    (pkg.desc.name.contains(&filt_lo)
-                        || pkg
-                            .desc
-                            .desc
-                            .as_ref()
-                            .is_some_and(|desc| desc.to_ascii_lowercase().contains(&filt_lo)))
-                    .then_some(PkgRef::from_components(db, PkgIdx::from_usize(idx)))
+                    pkg.matches_filt_string(&filt_lo)
+                        .then_some(PkgRef::from_components(db, PkgIdx::from_usize(idx)))
                 })
                 .collect();
         }

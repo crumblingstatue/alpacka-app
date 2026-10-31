@@ -23,6 +23,26 @@ pub struct TabViewState<'pkgs, 'dbs, 'ui> {
     pub ui: &'ui mut SharedUiState,
 }
 
+trait PkgExt {
+    fn matches_filt_string(&self, filt_lo: &str) -> bool;
+}
+
+impl PkgExt for alpacka::Pkg {
+    fn matches_filt_string(&self, filt_lo: &str) -> bool {
+        self.desc.name.contains(filt_lo)
+            || self
+                .desc
+                .desc
+                .as_ref()
+                .is_some_and(|desc| desc.to_ascii_lowercase().contains(filt_lo))
+            || self
+                .desc
+                .provides
+                .iter()
+                .any(|dep| dep.name.contains(filt_lo))
+    }
+}
+
 impl TabViewer for TabViewState<'_, '_, '_> {
     type Tab = Tab;
 

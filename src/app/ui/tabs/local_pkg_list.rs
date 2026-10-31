@@ -3,7 +3,7 @@ use {
     crate::{
         app::{
             PkgCache,
-            ui::{SharedUiState, cmd::Cmd, ico},
+            ui::{SharedUiState, cmd::Cmd, ico, tabs::PkgExt as _},
         },
         packages::{Dbs, PkgIdx, PkgRef},
     },
@@ -23,29 +23,22 @@ pub fn ui(
         ui.horizontal(|ui| {
             if super::query_edit(ui, &mut tab_state.query_src).changed() {
                 tab_state.query = PkgListQuery::compile(&tab_state.query_src);
-                pkgs.filt_local_pkgs =
-                    dbs.local_pkgs()
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(i, pkg)| {
-                            if tab_state.query.flags.explicitly_installed
-                                && !matches!(pkg.desc.install_reason, InstallReason::Explicit)
-                            {
-                                return None;
-                            }
-                            let filt_lo = tab_state.query.string.to_ascii_lowercase();
-                            (pkg.desc.name.contains(&filt_lo)
-                                || pkg.desc.desc.as_ref().is_some_and(|desc| {
-                                    desc.to_ascii_lowercase().contains(&filt_lo)
-                                })
-                                || pkg
-                                    .desc
-                                    .provides
-                                    .iter()
-                                    .any(|dep| dep.name.contains(&filt_lo)))
+                pkgs.filt_local_pkgs = dbs
+                    .local_pkgs()
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, pkg)| {
+                        if tab_state.query.flags.explicitly_installed
+                            && !matches!(pkg.desc.install_reason, InstallReason::Explicit)
+                        {
+                            return None;
+                        }
+                        let filt_lo = tab_state.query.string.to_ascii_lowercase();
+
+                        pkg.matches_filt_string(&filt_lo)
                             .then_some(PkgIdx::from_usize(i))
-                        })
-                        .collect();
+                    })
+                    .collect();
             }
             ui.spacing();
             ui.label(format!("{} packages listed", pkgs.filt_local_pkgs.len()));
